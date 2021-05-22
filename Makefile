@@ -46,6 +46,9 @@ GCC_BASE_CG := $(shell $(TOOLCHAIN_CG)-gcc --print-search-dirs | grep install | 
 GCC_INCLUDE_FX := $(GCC_BASE_FX)/include
 GCC_INCLUDE_CG := $(GCC_BASE_CG)/include
 
+INCLUDE_FX += -I $(GCC_INCLUDE_FX)/gint/std/
+INCLUDE_CG += -I $(GCC_INCLUDE_FX)/gint/std/
+
 #
 #  File listings
 #

@@ -67,19 +67,12 @@
 
 #include "slipdev.h"
 #include <gint/std/string.h>  /* For memcpy() */
+#include "uip/uip.h"
 
 #define SLIP_END     0xC0
 #define SLIP_ESC     0xDB
 #define SLIP_ESC_END 0xDC
 #define SLIP_ESC_ESC 0xDE
-
-
-#define UIP_LLH_LEN 0
-#define UIP_BUFSIZE 1900
-
-uint16_t uip_len; 
-uint8_t uip_buf[UIP_BUFSIZE] = {0};
-
 
 static uint8_t slip_buf[UIP_BUFSIZE];
 

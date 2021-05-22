@@ -5,6 +5,57 @@
 #include <gint/std/string.h>
 #include <gint/std/stdlib.h>
 
+#include "uip/uip.h"
+#include "uip/uip_arp.h"
+#include "uip/timer.h"
+
+#ifndef NULL
+#define NULL (void *)0
+#endif /* NULL */
+
+int i;
+uip_ipaddr_t ipaddr;
+struct timer periodic_timer, arp_timer;
+uint32_t ticks = 0; 
+
+
+
+typedef char log_msg_t[32];
+log_msg_t display_scroll_buf[6] = {{0}};
+
+unsigned int log_idx = 0;
+
+#define ARRAY_SIZE(x) (sizeof(x) / sizeof(*x))
+
+void render_logs()
+{
+	dclear(C_WHITE);
+
+	for (unsigned int i = 0; i < ARRAY_SIZE(display_scroll_buf); i++)
+	{
+		unsigned int line_idx = (log_idx + i) % ARRAY_SIZE(display_scroll_buf);
+
+		dtext(1, i * 10, C_BLACK, display_scroll_buf[line_idx]);
+	}
+	
+	dupdate();
+}
+void fxip_log(const char *msg)
+{
+	strncpy(display_scroll_buf[log_idx], msg, sizeof(log_msg_t));
+	display_scroll_buf[log_idx][sizeof(log_msg_t) - 1] = 0x00;
+
+	log_idx++;
+	log_idx %= ARRAY_SIZE(display_scroll_buf);
+
+	render_logs();
+}
+
+void uip_log(char *msg)
+{
+	fxip_log(msg);
+}
+
 /* 
 int Serial_ReadByte                (unsigned char *dest); 0x040C
 int Serial_ReadBytes               (unsigned char *dest, int max, short *size); 0x040D
@@ -78,17 +129,15 @@ static void casioos_slip_init(void)
 	slipdev_init();
 }
 
-int numbytes; 
 static int casioos_slip_poll(void)
 {
-	numbytes = slipdev_poll();
+	uip_len = slipdev_poll();
 }
 
 static void casioos_slip_send(void)
 {
 	slipdev_send();
 }
-
 
 void slipdev_char_put(unsigned char c)
 {
@@ -108,38 +157,52 @@ int slipdev_char_poll(unsigned char *c)
 	return !__Serial_ReadByte(c);
 }
 
+int casioos_sleep(int ms)
+{
+	__OS_InnerWait_ms(ms);
+}
+
 char printfbuffer[100];
-
-
-#define UIP_LLH_LEN 0
-#define UIP_BUFSIZE 1900
-
-extern uint16_t uip_len; 
-extern uint8_t uip_buf[UIP_BUFSIZE];
-
-const char testdata[] = "\x45\x00\x00\x80\x9f\x21\x40\x00\x40\x01\x73\x45\x0a\x0a\x0a\x01" \
-"\x0a\x0a\x0a\x02\x08\x00\x63\x84\x00\x07\x00\x02\xd1\x5f\xa9\x60" \
-"\x00\x00\x00\x00\xa7\x24\x0f\x00\x00\x00\x00\x00\x10\x11\x12\x13" \
-"\x14\x15\x16\x17\x18\x19\x1a\x1b\x1c\x1d\x1e\x1f\x20\x21\x22\x23" \
-"\x24\x25\x26\x27\x28\x29\x2a\x2b\x2c\x2d\x2e\x2f\x30\x31\x32\x33" \
-"\x34\x35\x36\x37\x38\x39\x3a\x3b\x3c\x3d\x3e\x3f\x40\x41\x42\x43" \
-"\x44\x45\x46\x47\x48\x49\x4a\x4b\x4c\x4d\x4e\x4f\x50\x51\x52\x53" \
-"\x54\x55\x56\x57\x58\x59\x5a\x5b\x5c\x5d\x5e\x5f\x60\x61\x62\x63";
 
 int main(void)
 {
-	dclear(C_WHITE);
-	dtext(1, 1, C_BLACK, __TIMESTAMP__);
-	dupdate();
+	fxip_log("fxIP, build date:");
+	fxip_log(__TIMESTAMP__);
+
+	/*int mockcounter = 0;
+
+	while (true)
+	{
+		snprintf(printfbuffer, sizeof(printfbuffer), "hallo %d", mockcounter);
+		fxip_log(printfbuffer);
+		render_logs();
+		mockcounter++;
+		
+		gint_world_switch(GINT_CALL(casioos_sleep, 1000));
+	}*/
 
 	gint_world_switch(GINT_CALL(casioos_Serial_Init));
 
 	gint_world_switch(GINT_CALL(casioos_slip_init));
 
 
+	uip_init();
+	fxip_log("uip_init() done");
+
+	uip_ipaddr(ipaddr, 10,10,10,2);
+	uip_sethostaddr(ipaddr);
+	uip_ipaddr(ipaddr, 10,10,10,1);
+	uip_setdraddr(ipaddr);
+	uip_ipaddr(ipaddr, 255,255,255,0);
+	uip_setnetmask(ipaddr);
+
+	//httpd_init();
+	hello_world_init();
+	fxip_log("hello_world_init() done");
+
 	while (true)
 	{
-		/*gint_world_switch(GINT_CALL(casioos_slip_poll));
+		/*
 		if (numbytes != 0)
 		{
 			snprintf(printfbuffer, sizeof(printfbuffer), "read: %d bytes", numbytes);
@@ -149,12 +212,49 @@ int main(void)
 			dupdate();
 		}*/
 	
-		uip_len = sizeof(testdata);
-		memcpy(uip_buf, testdata, sizeof(testdata));
-
-		gint_world_switch(GINT_CALL(casioos_slip_send));
-		
-		getkey();
+		gint_world_switch(GINT_CALL(casioos_slip_poll));
+		if(uip_len > 0)
+		{
+			fxip_log("received packet!");
+			//uip_arp_ipin();
+			uip_input();
+			/* If the above function invocation resulted in data that
+				should be sent out on the network, the global variable
+				uip_len is set to a value > 0. */
+			if(uip_len > 0)
+			{
+				//uip_arp_out();
+				fxip_log("sending response");
+				gint_world_switch(GINT_CALL(casioos_slip_send));
+			}
+			
+		} 
+		else if(timer_expired(&periodic_timer))
+		{
+			timer_reset(&periodic_timer);
+			//myprintf("periodic timer fired!\n");
+			for(i = 0; i < UIP_CONNS; i++)
+			{
+				uip_periodic(i);
+				/* If the above function invocation resulted in data that
+					should be sent out on the network, the global variable
+					uip_len is set to a value > 0. */
+				if(uip_len > 0)
+				{
+					//uip_arp_out();
+					gint_world_switch(GINT_CALL(casioos_slip_send));
+				}
+			}
+			
+			/* Call the ARP timer function every 10 seconds. */
+			if(timer_expired(&arp_timer))
+			{
+				timer_reset(&arp_timer);
+				//myprintf("arp timer fired!\n");
+				//uip_arp_timer();
+			}
+		}
+		ticks++;
 	}
 
 	getkey();
