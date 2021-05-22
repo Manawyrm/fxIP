@@ -167,7 +167,8 @@ char printfbuffer[100];
 int main(void)
 {
 	fxip_log("fxIP, build date:");
-	fxip_log(__TIMESTAMP__);
+	fxip_log(&__TIMESTAMP__[4]);
+	fxip_log("manawyrm & TobleMiner");
 
 	/*int mockcounter = 0;
 
@@ -198,7 +199,7 @@ int main(void)
 
 	//httpd_init();
 	hello_world_init();
-	fxip_log("hello_world_init() done");
+	fxip_log("app_init() done");
 
 	while (true)
 	{
@@ -215,7 +216,7 @@ int main(void)
 		gint_world_switch(GINT_CALL(casioos_slip_poll));
 		if(uip_len > 0)
 		{
-			fxip_log("received packet!");
+			//fxip_log("received packet!");
 			//uip_arp_ipin();
 			uip_input();
 			/* If the above function invocation resulted in data that
@@ -224,7 +225,7 @@ int main(void)
 			if(uip_len > 0)
 			{
 				//uip_arp_out();
-				fxip_log("sending response");
+				//fxip_log("sending response");
 				gint_world_switch(GINT_CALL(casioos_slip_send));
 			}
 			
@@ -255,6 +256,7 @@ int main(void)
 			}
 		}
 		ticks++;
+		gint_world_switch(GINT_CALL(casioos_sleep, 0));
 	}
 
 	getkey();

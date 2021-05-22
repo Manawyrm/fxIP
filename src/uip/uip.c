@@ -926,22 +926,21 @@ uip_process(u8_t flag)
     /* Check if the packet is destined for our IP address. */
 #if !UIP_CONF_IPV6
     if(!uip_ipaddr_cmp(BUF->destipaddr, uip_hostaddr)) {
-        UIP_LOG("not our packet, dropped!");
+        /*UIP_LOG("not our packet, dropped!");
 
-        #define destipbuf ((uint8_t*)BUF->destipaddr)
+        /*#define destipbuf ((uint8_t*)BUF->destipaddr)
         #define hostadbuf ((uint8_t*)uip_hostaddr)
 
         snprintf(printfbuffer, sizeof(printfbuffer), "d: %d.%d.%d.%d", destipbuf[0], destipbuf[1], destipbuf[2], destipbuf[3]);
         UIP_LOG(printfbuffer);
 
         snprintf(printfbuffer, sizeof(printfbuffer), "h: %d.%d.%d.%d", hostadbuf[0], hostadbuf[1], hostadbuf[2], hostadbuf[3]);
-        UIP_LOG(printfbuffer);
+        UIP_LOG(printfbuffer);*/
 
 
       UIP_STAT(++uip_stat.ip.drop);
       goto drop;
     }
-      UIP_LOG("packet for us :)");
 
 #else /* UIP_CONF_IPV6 */
     /* For IPv6, packet reception is a little trickier as we need to
