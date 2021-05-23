@@ -68,16 +68,59 @@
 #include "slipdev.h"
 #include <gint/std/string.h>  /* For memcpy() */
 #include "uip/uip.h"
+#include "scif.h"
 
 #define SLIP_END     0xC0
 #define SLIP_ESC     0xDB
 #define SLIP_ESC_END 0xDC
-#define SLIP_ESC_ESC 0xDE
+#define SLIP_ESC_ESC 0xDD
 
 static uint8_t slip_buf[UIP_BUFSIZE];
 
 static uint16_t len, tmplen;
 static uint8_t lastc;
+
+/**
+ * Put a character on the serial device.
+ *
+ * This function is used by the SLIP implementation to put a character
+ * on the serial device. It must be implemented specifically for the
+ * system on which the SLIP implementation is to be run.
+ *
+ * \param c The character to be put on the serial device.
+ */
+static void slipdev_char_put(uint8_t c)
+{
+  scif_write(&c, 1);
+}
+
+/**
+ * Poll the serial device for a character.
+ *
+ * This function is used by the SLIP implementation to poll the serial
+ * device for a character. It must be implemented specifically for the
+ * system on which the SLIP implementation is to be run.
+ *
+ * The function should return immediately regardless if a character is
+ * available or not. If a character is available it should be placed
+ * at the memory location pointed to by the pointer supplied by the
+ * argument c.
+ *
+ * \param c A pointer to a byte that is filled in by the function with
+ * the received character, if available.
+ *
+ * \retval 0 If no character is available.
+ * \retval Non-zero If a character is available.
+ */
+static int slipdev_char_poll(uint8_t *c)
+{
+  int data = scif_read();
+  if (data < 0)
+    return 0;
+
+  *c = data;
+  return 1;
+}
 
 /*-----------------------------------------------------------------------------------*/
 /**
@@ -91,8 +134,7 @@ static uint8_t lastc;
  * \return This function will always return 0.
  */
 /*-----------------------------------------------------------------------------------*/
-uint8_t
-slipdev_send(void)
+uint8_t slipdev_send(void)
 {
   uint16_t i;
   uint8_t *ptr;
@@ -138,8 +180,7 @@ slipdev_send(void)
  * zero if no packet is available.
  */
 /*-----------------------------------------------------------------------------------*/
-uint16_t
-slipdev_poll(void)
+uint16_t slipdev_poll(void)
 {
   uint8_t c;
 
@@ -196,8 +237,7 @@ slipdev_poll(void)
  * only the SLIP part.
  */ 
 /*-----------------------------------------------------------------------------------*/
-void
-slipdev_init(void)
+void slipdev_init(void)
 {
   lastc = len = 0;
 }

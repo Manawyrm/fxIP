@@ -1,12 +1,7 @@
 #include "scif.h"
+#include "util.h"
 #include <gint/intc.h>
 #include "ringbuffer.h"
-
-#define BIT(x) (1 << (x))
-#define BITMASK(end, start) (((BIT(end + 1) >> start) - 1) << start)
-
-#define MMIO8(addr) (*(volatile uint8_t*)(addr)) 
-#define MMIO16(addr) (*(volatile uint16_t*)(addr)) 
 
 #define SCIF_BASE 0xA4410000
 #define SCIF_SIZE 0x10000
@@ -32,7 +27,7 @@
 #define SCLSR0	SCLSR(0)
 
 #define SCFSR_TEND BIT(6)
-#define SCFSR_TDFE BIT(5) /* Doesn't seem to work on fx-9750GII? Beware! */
+#define SCFSR_TDFE BIT(5)
 #define SCFSR_RDF  BIT(1)
 #define SCFSR_DR   BIT(0)
 
@@ -49,42 +44,12 @@
 
 #define SCIF_SCIF0_INTEVT 0xC00
 
-#define RING_BUF_SIZE 1024
+#define RING_BUF_SIZE 2048
 uint8_t rx_buffer[RING_BUF_SIZE];
 ringbuffer_t rx_ring;
 
 uint8_t tx_buffer[RING_BUF_SIZE];
 ringbuffer_t tx_ring;
-
-
-
-
-extern unsigned int log_idx;
-uint8_t counter = 0;
-
-void scif_debug()
-{
-	//A441 0000
-	/*fxip_printf("SCSMR0: 0x%04x", SCSMR0);
-	fxip_printf("SCBRR0: 0x%02x", SCBRR0);
-	fxip_printf("SCSCR0: 0x%04x", SCSCR0);*/
-	log_idx = 0;
-	fxip_printf("SCFSR0: 0x%04x", SCFSR0);
-	fxip_printf("SCSCR0: 0x%04x", SCSCR0);
-	//fxip_printf("wpos  : 0x%04x", rx_ring_write);
-	fxip_printf("count : 0x%02x", counter++);
-
-	//print_memory(cpu_getVBR() + 0x640, 0x1000);
-	int data; 
-
-	if ((data = scif_read()) > 0)
-	{
-		uint8_t data2 = data;
-		scif_write(&data2, 1);
-	}
-
-	render_logs();
-}
 
 void scif_write(const void *data, uint16_t len)
 {
@@ -128,10 +93,6 @@ static void scif_interrupt()
 
 void scif_init()
 {
-	// disable RIE
-	//SCSCR0 &= ~BIT(6);
-	//((void(*)())0xcaffee05)();
-
 	ringbuffer_init(&rx_ring, rx_buffer, RING_BUF_SIZE);
 	ringbuffer_init(&tx_ring, tx_buffer, RING_BUF_SIZE);
 
