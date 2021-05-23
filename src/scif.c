@@ -44,12 +44,17 @@
 #define SCFDR_RFDC_SHIFT 0
 #define SCFDR_RFDC ((SCFDR0 & SCFDR_RFDC_MASK) >> SCFDR_RFDC_SHIFT)
 
+#define SCSCR_TIE BIT(7)
+#define SCSCR_TE  BIT(5)
+
 #define SCIF_SCIF0_INTEVT 0xC00
 
 #define RING_BUF_SIZE 1024
 uint8_t rx_buffer[RING_BUF_SIZE];
 ringbuffer_t rx_ring;
 
+uint8_t tx_buffer[RING_BUF_SIZE];
+ringbuffer_t tx_ring;
 
 
 
@@ -79,19 +84,13 @@ void scif_debug()
 	}
 
 	render_logs();
-
 }
 
 void scif_write(const void *data, uint16_t len)
 {
-	const uint8_t *data8 = data;
-
-	while (len--)
-	{
-		while (SCFDR_TFDC > 8);
-
-		SCFTDR0 = *data8++;
-	}
+	ringbuffer_write(&tx_ring, data, len);
+	// enable transmit interrupt
+	SCSCR0 |= SCSCR_TIE;
 }
 
 int scif_read()
@@ -105,6 +104,19 @@ int scif_read()
 
 static void scif_interrupt()
 {
+	// fill TX FIFO
+	while (SCFDR_TFDC < 16 && ringbuffer_available(&tx_ring))
+	{
+		SCFTDR0 = ringbuffer_read_one(&tx_ring);
+	}
+	if (!ringbuffer_available(&tx_ring))
+	{
+		// TX done, disable transmit interrupt
+		SCSCR0 &= ~SCSCR_TIE;
+	}
+	SCFSR0 &= ~SCFSR_TDFE;
+
+	// read RX FIFO
 	// Number of Data Bytes in Receive FIFO > 0
 	while (SCFDR_RFDC > 0)
 	{
@@ -121,6 +133,10 @@ void scif_init()
 	//((void(*)())0xcaffee05)();
 
 	ringbuffer_init(&rx_ring, rx_buffer, RING_BUF_SIZE);
+	ringbuffer_init(&tx_ring, tx_buffer, RING_BUF_SIZE);
+
+	// disable transmit interrupt
+	SCSCR0 &= ~SCSCR_TIE;
 
 	intc_handler_function(SCIF_SCIF0_INTEVT, scif_interrupt);
 	intc_priority(INTC_SCIF0, 1);
