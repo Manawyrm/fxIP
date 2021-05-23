@@ -37,6 +37,7 @@
 #include <stdint.h>
 
 typedef uint32_t clock_time_t;
-#define CLOCK_CONF_SECOND 2000
+#define CLOCK_CONF_SECOND 10 /* 100ms */
+void clock_setup(void);
 
 #endif /* __CLOCK_ARCH_H__ */

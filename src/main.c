@@ -6,8 +6,9 @@
 #include <gint/std/stdlib.h>
 
 #include "uip/uip.h"
-#include "uip/uip_arp.h"
 #include "uip/timer.h"
+
+#include "clock-arch.h"
 
 #ifndef NULL
 #define NULL (void *)0
@@ -16,7 +17,6 @@
 int i;
 uip_ipaddr_t ipaddr;
 struct timer periodic_timer, arp_timer;
-uint32_t ticks = 0; 
 
 typedef char log_msg_t[32];
 log_msg_t display_scroll_buf[6] = {{0}};
@@ -112,46 +112,28 @@ void casioos_serial_write_and_block(unsigned char *src, int size)
 
 static int casioos_Serial_Init()
 {
-	 unsigned char settings[5]={0,6,0,0,0};
-	 
+	 unsigned char settings[5]={0,9,0,0,0};
+
 	 __Serial_Open(settings);
-	 
+
 	 serial_tx_bufsize = __Serial_GetTxBufferFreeCapacity();
 	 
 	 return 0;
 }
 
-static void casioos_slip_init(void)
-{
-	slipdev_init();
-}
-
-static int casioos_slip_poll(void)
-{
-	uip_len = slipdev_poll();
-}
-
-static void casioos_slip_send(void)
-{
-	slipdev_send();
-}
-
 void slipdev_char_put(unsigned char c)
 {
-	while (__Serial_WriteByte(c) != 0)
-	{
-
-	}
-
-	while (__Serial_GetTxBufferFreeCapacity() != serial_tx_bufsize)
-	{
-		__OS_InnerWait_ms(0);
-	}
+	scif_write(&c, 1);
 }
 
 int slipdev_char_poll(unsigned char *c)
 {
-	return !__Serial_ReadByte(c);
+	int data = scif_read();
+	if (data < 0)
+		return 0;
+
+	*c = data;
+	return 1;
 }
 
 int casioos_sleep(int ms)
@@ -168,8 +150,21 @@ int main(void)
 	fxip_log("manawyrm & TobleMiner");
 
 	gint_world_switch(GINT_CALL(casioos_Serial_Init));
+	scif_init();
 
-	gint_world_switch(GINT_CALL(casioos_slip_init));
+	/*while (true)
+	{
+		scif_debug();
+		getkey();
+	}
+
+	getkey();
+	return 1;*/
+
+	slipdev_init();
+
+	clock_setup();
+	timer_set(&periodic_timer, CLOCK_SECOND / 2);
 
 	uip_init();
 	fxip_log("uip_init() done");
@@ -187,8 +182,7 @@ int main(void)
 
 	while (true)
 	{
-	
-		gint_world_switch(GINT_CALL(casioos_slip_poll));
+		uip_len = slipdev_poll();
 		if(uip_len > 0)
 		{
 			//snprintf(printfbuffer, sizeof(printfbuffer), "RX length: %d", uip_len);
@@ -200,7 +194,7 @@ int main(void)
 				uip_len is set to a value > 0. */
 			if(uip_len > 0)
 			{
-				gint_world_switch(GINT_CALL(casioos_slip_send));
+				slipdev_send();
 			}
 			
 		} 
@@ -216,12 +210,11 @@ int main(void)
 					uip_len is set to a value > 0. */
 				if(uip_len > 0)
 				{
-					gint_world_switch(GINT_CALL(casioos_slip_send));
+					slipdev_send();
 				}
 			}
 		}
-		ticks++;
-		gint_world_switch(GINT_CALL(casioos_sleep, 0));
+		//gint_world_switch(GINT_CALL(casioos_sleep, 0));
 	}
 
 	getkey();

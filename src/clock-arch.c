@@ -39,19 +39,27 @@
  */
 
 #include "clock-arch.h"
-//#include <sys/time.h>
-extern uint32_t ticks;
- 
+#include <gint/timer.h>
+
+static volatile uint32_t ticks = 0; 
+static int timer; 
 /*---------------------------------------------------------------------------*/
 clock_time_t
 clock_time(void)
 {
-  /*struct timeval tv;
-  struct timezone tz;
-
-  gettimeofday(&tv, &tz);
-
-  return tv.tv_sec * 1000 + tv.tv_usec / 1000;*/
   return ticks;
+}
+
+static int clock_tick_callback()
+{
+	ticks++;
+	return TIMER_CONTINUE; 
+}
+
+void clock_setup(void)
+{
+	ticks = 0;
+	timer = timer_configure(TIMER_ANY, 100000 /* 100ms */, GINT_CALL(clock_tick_callback));
+	timer_start(timer);
 }
 /*---------------------------------------------------------------------------*/
