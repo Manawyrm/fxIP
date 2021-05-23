@@ -1,5 +1,6 @@
 #pragma once
 #include <stdint.h>
+#include <string.h>
 
 typedef struct 
 {
@@ -39,5 +40,33 @@ static inline uint8_t ringbuffer_read_one(ringbuffer_t *ring)
 static inline void ringbuffer_write_one(ringbuffer_t *ring, uint8_t byte)
 {
 	ring->buffer[ring->write_ptr++] = byte;
+	ring->write_ptr %= ring->size;
+}
+
+static inline void ringbuffer_write(ringbuffer_t *ring, const void *data, uint16_t len)
+{
+	if (ring->size - ring->write_ptr < len)
+	{
+		const uint8_t *data8 = data;
+		if (len > ring->size)
+		{
+			data8 += len - ring->size;
+			len = ring->size;
+		}
+
+		memcpy(&ring->buffer[ring->write_ptr], data8, ring->size - ring->write_ptr);
+		data8 += ring->size - ring->write_ptr;
+		len -= ring->size - ring->write_ptr;
+		ring->write_ptr = 0;
+
+		memcpy(&ring->buffer[ring->write_ptr], data8, len);
+		ring->write_ptr += len;
+	}
+	else
+	{
+		memcpy(&ring->buffer[ring->write_ptr], data, len);
+		ring->write_ptr += len;
+	}
+
 	ring->write_ptr %= ring->size;
 }
