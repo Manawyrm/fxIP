@@ -26,13 +26,13 @@ void uip_log(char *msg)
 	fxip_log(msg);
 }
 
-char buffer[128];
+char printf_buffer[128];
 void fxip_printf(const char * format, ...)
 {
   va_list args;
   va_start (args, format);
-  vsnprintf (buffer, 128, format, args);
-  fxip_log (buffer);
+  vsnprintf (printf_buffer, sizeof(printf_buffer), format, args);
+  fxip_log (printf_buffer);
   va_end (args);
 }
 

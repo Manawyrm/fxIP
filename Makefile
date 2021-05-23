@@ -10,8 +10,8 @@
 include project.cfg
 
 # Compiler flags
-CFLAGSFX = $(CFLAGS) $(CFLAGS_FX) $(INCLUDE_FX)
-CFLAGSCG = $(CFLAGS) $(CFLAGS_CG) $(INCLUDE_CG)
+CFLAGSFX = $(CFLAGS) $(CFLAGS_FX) $(INCLUDE_FX) -Wl,--print-memory-usage
+CFLAGSCG = $(CFLAGS) $(CFLAGS_CG) $(INCLUDE_CG) -Wl,--print-memory-usage
 
 # Linker flags
 LDFLAGSFX := $(LDFLAGS) $(LDFLAGS_FX)

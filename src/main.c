@@ -8,6 +8,7 @@
 #include "ui.h"
 #include "log.h"
 #include "network.h"
+#include "clock-arch.h"
 
 int __Serial_Open                    (unsigned char *mode);
 int __Serial_Close                   (int mode);
@@ -44,6 +45,11 @@ int main(void)
 			// Exit
 			gint_world_switch(GINT_CALL(casioos_Serial_Close));
 			return 1;
+		}
+
+		if (clock_time() % 10 == 0)
+		{
+			ui_update();
 		}
 	}
 
