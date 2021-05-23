@@ -140,9 +140,6 @@ buf_bufto(register struct psock_buf *buf, u8_t endmarker,
   
   return BUF_FULL;
 }
-
-//#define registert
-
 /*---------------------------------------------------------------------------*/
 static char
 send_data(register struct psock *s)
@@ -162,7 +159,6 @@ send_data(register struct psock *s)
 static char
 data_acked(register struct psock *s)
 {
-  //myprintf("%s: state 0x%02x sendlen %u psock %p\n", __func__, s->state, s->sendlen, s);
   if(s->state == STATE_DATA_SENT && uip_acked()) {
     if(s->sendlen > uip_mss()) {
       s->sendlen -= uip_mss();
@@ -196,10 +192,8 @@ PT_THREAD(psock_send(register struct psock *s, const char *buf,
 
   /* We loop here until all data is sent. The s->sendlen variable is
      updated by the data_sent() function. */
-  if (!s->sendlen) goto acked;
-ack_loop:
-//  while(s->sendlen > 0) {
-    //myprintf("%s: state 0x%02x sendlen %u psock %p\n", __func__, s->state, s->sendlen, s);
+  while(s->sendlen > 0) {
+
     /*
      * The condition for this PT_WAIT_UNTIL is a little tricky: the
      * protothread will wait here until all data has been acknowledged
@@ -211,10 +205,8 @@ ack_loop:
      * to be called when it returns false.
      */
     PT_WAIT_UNTIL(&s->psockpt, data_acked(s) & send_data(s));
-    if (s->sendlen) goto ack_loop;
-//  }
+  }
 
-acked:
   s->state = STATE_NONE;
   
   PT_END(&s->psockpt);

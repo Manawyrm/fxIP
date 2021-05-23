@@ -18,8 +18,6 @@ uip_ipaddr_t ipaddr;
 struct timer periodic_timer, arp_timer;
 uint32_t ticks = 0; 
 
-
-
 typedef char log_msg_t[32];
 log_msg_t display_scroll_buf[6] = {{0}};
 
@@ -107,14 +105,14 @@ void casioos_serial_write_and_block(unsigned char *src, int size)
 
 		while (__Serial_GetTxBufferFreeCapacity() != serial_tx_bufsize)
 		{
-			__OS_InnerWait_ms(1);
+			__OS_InnerWait_ms(0);
 		}
 	}
 }
 
 static int casioos_Serial_Init()
 {
-	 unsigned char settings[5]={0,9,0,0,0};
+	 unsigned char settings[5]={0,6,0,0,0};
 	 
 	 __Serial_Open(settings);
 	 
@@ -122,7 +120,6 @@ static int casioos_Serial_Init()
 	 
 	 return 0;
 }
-
 
 static void casioos_slip_init(void)
 {
@@ -148,7 +145,7 @@ void slipdev_char_put(unsigned char c)
 
 	while (__Serial_GetTxBufferFreeCapacity() != serial_tx_bufsize)
 	{
-		__OS_InnerWait_ms(1);
+		__OS_InnerWait_ms(0);
 	}
 }
 
@@ -170,22 +167,9 @@ int main(void)
 	fxip_log(&__TIMESTAMP__[4]);
 	fxip_log("manawyrm & TobleMiner");
 
-	/*int mockcounter = 0;
-
-	while (true)
-	{
-		snprintf(printfbuffer, sizeof(printfbuffer), "hallo %d", mockcounter);
-		fxip_log(printfbuffer);
-		render_logs();
-		mockcounter++;
-		
-		gint_world_switch(GINT_CALL(casioos_sleep, 1000));
-	}*/
-
 	gint_world_switch(GINT_CALL(casioos_Serial_Init));
 
 	gint_world_switch(GINT_CALL(casioos_slip_init));
-
 
 	uip_init();
 	fxip_log("uip_init() done");
@@ -203,29 +187,19 @@ int main(void)
 
 	while (true)
 	{
-		/*
-		if (numbytes != 0)
-		{
-			snprintf(printfbuffer, sizeof(printfbuffer), "read: %d bytes", numbytes);
-
-			dclear(C_WHITE);
-			dtext(1, 20, C_BLACK, printfbuffer);
-			dupdate();
-		}*/
 	
 		gint_world_switch(GINT_CALL(casioos_slip_poll));
 		if(uip_len > 0)
 		{
-			//fxip_log("received packet!");
-			//uip_arp_ipin();
+			//snprintf(printfbuffer, sizeof(printfbuffer), "RX length: %d", uip_len);
+			//uip_log(printfbuffer);
+
 			uip_input();
 			/* If the above function invocation resulted in data that
 				should be sent out on the network, the global variable
 				uip_len is set to a value > 0. */
 			if(uip_len > 0)
 			{
-				//uip_arp_out();
-				//fxip_log("sending response");
 				gint_world_switch(GINT_CALL(casioos_slip_send));
 			}
 			
@@ -242,17 +216,8 @@ int main(void)
 					uip_len is set to a value > 0. */
 				if(uip_len > 0)
 				{
-					//uip_arp_out();
 					gint_world_switch(GINT_CALL(casioos_slip_send));
 				}
-			}
-			
-			/* Call the ARP timer function every 10 seconds. */
-			if(timer_expired(&arp_timer))
-			{
-				timer_reset(&arp_timer);
-				//myprintf("arp timer fired!\n");
-				//uip_arp_timer();
 			}
 		}
 		ticks++;

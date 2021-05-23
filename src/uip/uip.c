@@ -1,3 +1,4 @@
+#define DEBUG_PRINTF(...) /*printf(__VA_ARGS__)*/
 
 /**
  * \defgroup uip The uIP TCP/IP stack
@@ -16,8 +17,6 @@
  * \file
  * The uIP TCP/IP stack code.
  * \author Adam Dunkels <adam@dunkels.com>
- * 
- * Checksum code fixed for sdcc/z88dk by Tobias Schramm
  */
 
 /*
@@ -79,8 +78,6 @@
  * checksums, and fill in the necessary header fields and finally send
  * the packet back to the peer.
 */
-#include "debug.h"
-#define DEBUG_PRINTF(...) /*myprintf(__VA_ARGS__)*/
 
 #include "uip.h"
 #include "uipopt.h"
@@ -91,7 +88,7 @@
 #endif /* UIP_CONF_IPV6 */
 
 #include <string.h>
-extern char printfbuffer[100];
+
 /*---------------------------------------------------------------------------*/
 /* Variable definitions. */
 
@@ -282,35 +279,30 @@ uip_add32(u8_t *op32, u16_t op16)
 static u16_t
 chksum(u16_t sum, const u8_t *data, u16_t len)
 {
-  //myprintf("sum: %04x len: %04x\n", sum, len);
-  //print_memory(data, len);
-  //myprintf("\n");
+  u16_t t;
+  const u8_t *dataptr;
+  const u8_t *last_byte;
 
-  // Function rewritten by Tobias Schramm
-  // for correct function with SDCC/z88dk
-  for (; len >= 2; len -= 2)
-  {
-    u16_t t;
-
-    t = ((uint16_t)*data++ << 8) | *data++;
+  dataptr = data;
+  last_byte = data + len - 1;
+  
+  while(dataptr < last_byte) {	/* At least two more bytes */
+    t = (dataptr[0] << 8) + dataptr[1];
     sum += t;
     if(sum < t) {
       sum++;		/* carry */
     }
+    dataptr += 2;
   }
   
-  if(len) {
-  	u16_t t;
-
-    t = ((uint16_t)*data << 8);
+  if(dataptr == last_byte) {
+    t = (dataptr[0] << 8) + 0;
     sum += t;
     if(sum < t) {
       sum++;		/* carry */
     }
   }
 
-  //myprintf("checksum: %04x\n", sum);
- // myprintf("\n\n");
   /* Return sum in host byte order. */
   return sum;
 }
@@ -835,6 +827,7 @@ uip_process(u8_t flag)
   UIP_STAT(++uip_stat.ip.recv);
 
   /* Start of IP input header processing code. */
+  
 #if UIP_CONF_IPV6
   /* Check validity of the IP header. */
   if((BUF->vtc & 0xf0) != 0x60)  { /* IP version and header length. */
@@ -926,22 +919,9 @@ uip_process(u8_t flag)
     /* Check if the packet is destined for our IP address. */
 #if !UIP_CONF_IPV6
     if(!uip_ipaddr_cmp(BUF->destipaddr, uip_hostaddr)) {
-        /*UIP_LOG("not our packet, dropped!");
-
-        /*#define destipbuf ((uint8_t*)BUF->destipaddr)
-        #define hostadbuf ((uint8_t*)uip_hostaddr)
-
-        snprintf(printfbuffer, sizeof(printfbuffer), "d: %d.%d.%d.%d", destipbuf[0], destipbuf[1], destipbuf[2], destipbuf[3]);
-        UIP_LOG(printfbuffer);
-
-        snprintf(printfbuffer, sizeof(printfbuffer), "h: %d.%d.%d.%d", hostadbuf[0], hostadbuf[1], hostadbuf[2], hostadbuf[3]);
-        UIP_LOG(printfbuffer);*/
-
-
       UIP_STAT(++uip_stat.ip.drop);
       goto drop;
     }
-
 #else /* UIP_CONF_IPV6 */
     /* For IPv6, packet reception is a little trickier as we need to
        make sure that we listen to certain multicast addresses (all
