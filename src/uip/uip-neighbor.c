@@ -42,7 +42,7 @@
 #include "uip-neighbor.h"
 
 #include <string.h>
-#include "debug.h"
+#include "log.h"
 #define MAX_TIME 128
 
 #ifdef UIP_NEIGHBOR_CONF_ENTRIES

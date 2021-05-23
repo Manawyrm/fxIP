@@ -86,8 +86,7 @@ static unsigned short
 generate_file_stats(void *arg)
 {
   char *f = (char *)arg;
-  //return snprintf((char *)uip_appdata, UIP_APPDATA_SIZE, "%5u", httpd_fs_count(f));
-  return "";
+  return snprintf((char *)uip_appdata, UIP_APPDATA_SIZE, "%5u", httpd_fs_count(f));
 }
 /*---------------------------------------------------------------------------*/
 static

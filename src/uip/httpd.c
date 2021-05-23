@@ -74,6 +74,28 @@
 #define ISO_slash   0x2f
 #define ISO_colon   0x3a
 
+int strncmp(const char * s1, const char * s2, size_t n)
+{
+    while ( n && *s1 && ( *s1 == *s2 ) )
+    {
+        ++s1;
+        ++s2;
+        --n;
+    }
+    if ( n == 0 )
+    {
+        return 0;
+    }
+    else
+    {
+        return ( *(unsigned char *)s1 - *(unsigned char *)s2 );
+    }
+}
+char *strcpy (char * destination, const char * source)
+{
+    memcpy(destination, source, strlen(source));
+    return destination;
+}
 
 /*---------------------------------------------------------------------------*/
 static unsigned short
@@ -197,7 +219,7 @@ PT_THREAD(send_headers(struct httpd_state *s, const char *statushdr))
   if(ptr == NULL) {
     PSOCK_SEND_STR(&s->sout, http_content_type_binary);
   } else if(strncmp(http_html, ptr, 5) == 0 ||
-	    strncmp(http_htm, ptr, 4) == 0) {
+	    strncmp(http_shtml, ptr, 6) == 0) {
     PSOCK_SEND_STR(&s->sout, http_content_type_html);
   } else if(strncmp(http_css, ptr, 4) == 0) {
     PSOCK_SEND_STR(&s->sout, http_content_type_css);
@@ -208,7 +230,7 @@ PT_THREAD(send_headers(struct httpd_state *s, const char *statushdr))
   } else if(strncmp(http_jpg, ptr, 4) == 0) {
     PSOCK_SEND_STR(&s->sout, http_content_type_jpg);
   } else {
-    PSOCK_SEND_STR(&s->sout, http_content_type_html);
+    PSOCK_SEND_STR(&s->sout, http_content_type_plain);
   }
   PSOCK_END(&s->sout);
 }
