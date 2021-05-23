@@ -1,5 +1,6 @@
 #include "scif.h"
 #include <gint/intc.h>
+#include "ringbuffer.h"
 
 #define BIT(x) (1 << (x))
 #define BITMASK(end, start) (((BIT(end + 1) >> start) - 1) << start)
@@ -43,13 +44,14 @@
 #define SCFDR_RFDC_SHIFT 0
 #define SCFDR_RFDC ((SCFDR0 & SCFDR_RFDC_MASK) >> SCFDR_RFDC_SHIFT)
 
-
 #define SCIF_SCIF0_INTEVT 0xC00
 
 #define RING_BUF_SIZE 1024
-uint8_t rx_ring_buf[RING_BUF_SIZE];
-uint16_t rx_ring_read  = 0;
-volatile uint16_t rx_ring_write = 0; 
+uint8_t rx_buffer[RING_BUF_SIZE];
+ringbuffer_t rx_ring;
+
+
+
 
 
 extern unsigned int log_idx;
@@ -64,7 +66,7 @@ void scif_debug()
 	log_idx = 0;
 	fxip_printf("SCFSR0: 0x%04x", SCFSR0);
 	fxip_printf("SCSCR0: 0x%04x", SCSCR0);
-	fxip_printf("wpos  : 0x%04x", rx_ring_write);
+	//fxip_printf("wpos  : 0x%04x", rx_ring_write);
 	fxip_printf("count : 0x%02x", counter++);
 
 	//print_memory(cpu_getVBR() + 0x640, 0x1000);
@@ -94,11 +96,9 @@ void scif_write(const void *data, uint16_t len)
 
 int scif_read()
 {
-	if (rx_ring_read != rx_ring_write)
+	if (ringbuffer_available(&rx_ring))
 	{
-		uint8_t byte = rx_ring_buf[rx_ring_read++];
-		rx_ring_read %= sizeof(rx_ring_buf);
-		return byte;
+		return ringbuffer_read_one(&rx_ring);
 	}
 	return -1;
 }
@@ -108,8 +108,7 @@ static void scif_interrupt()
 	// Number of Data Bytes in Receive FIFO > 0
 	while (SCFDR_RFDC > 0)
 	{
-		rx_ring_buf[rx_ring_write++] = SCFRDR0;
-		rx_ring_write %= sizeof(rx_ring_buf);
+		ringbuffer_write_one(&rx_ring, SCFRDR0);
 	}
 	SCFSR0 &= ~SCFSR_DR;
 	SCFSR0 &= ~SCFSR_RDF;
@@ -120,6 +119,8 @@ void scif_init()
 	// disable RIE
 	//SCSCR0 &= ~BIT(6);
 	//((void(*)())0xcaffee05)();
+
+	ringbuffer_init(&rx_ring, rx_buffer, RING_BUF_SIZE);
 
 	intc_handler_function(SCIF_SCIF0_INTEVT, scif_interrupt);
 	intc_priority(INTC_SCIF0, 1);
