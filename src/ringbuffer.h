@@ -2,7 +2,7 @@
 #include <stdint.h>
 #include <string.h>
 
-typedef struct 
+typedef struct
 {
 	uint8_t *buffer;
 	volatile uint16_t read_ptr;
