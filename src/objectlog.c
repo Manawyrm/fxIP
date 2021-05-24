@@ -200,3 +200,30 @@ objectlog_iterator_t objectlog_next(objectlog_t *log, objectlog_iterator_t itera
 	iterator %= log->ring.size;
 	return iterator;
 }
+
+/**
+ * Get size of object at index @object_idx
+ *
+ * @returns: -1 on failure, else
+ *	     non-negative length of object
+ */
+long objectlog_get_object_size(objectlog_t *log, int object_idx) {
+	objectlog_iterator_t iter;
+	uint16_t len = 0;
+
+	iter = objectlog_iterator(log, object_idx);
+	if (iter < 0) {
+		return -1;
+	}
+	while (iter >= 0) {
+		uint8_t fragment_size;
+
+		if (!objectlog_get_fragment(log, iter, &fragment_size)) {
+			return -1;
+		}
+		len += fragment_size;
+		iter = objectlog_next(log, iter);
+	}
+
+	return len;
+}

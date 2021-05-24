@@ -19,3 +19,4 @@ void objectlog_write_string(objectlog_t *log, const char *str);
 objectlog_iterator_t objectlog_iterator(objectlog_t *log, int object_idx);
 const void *objectlog_get_fragment(objectlog_t *log, objectlog_iterator_t iterator, uint8_t *len);
 objectlog_iterator_t objectlog_next(objectlog_t *log, objectlog_iterator_t iterator);
+long objectlog_get_object_size(objectlog_t *log, int object_idx);
