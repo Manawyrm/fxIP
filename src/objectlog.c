@@ -126,28 +126,28 @@ void objectlog_write_string(objectlog_t *log, const char *str) {
 }
 
 /**
- * Obtain interator for string at index @string_idx
+ * Obtain interator for object at index @object_idx
  * Negative indices count from last to first string.
  *
  * @returns: non-negative iterator value on success, -1 on failure
  */
-objectlog_iterator_t objectlog_iterator(objectlog_t *log, int string_idx) {
+objectlog_iterator_t objectlog_iterator(objectlog_t *log, int object_idx) {
 	uint16_t string_ptr = log->ptr_first;
 
-	if (string_idx < 0) {
-		string_idx = -string_idx;
-		if (string_idx >= log->num_entries) {
+	if (object_idx < 0) {
+		object_idx = -object_idx;
+		if (object_idx >= log->num_entries) {
 			return -1;
 		}
-		string_idx = log->num_entries - string_idx;
+		object_idx = log->num_entries - object_idx;
 	} else {
-		if (string_idx >= log->num_entries) {
+		if (object_idx >= log->num_entries) {
 			return -1;
 		}
 
 	}
 
-	while (string_idx--) {
+	while (object_idx--) {
 		string_ptr = get_next_entry(log, string_ptr);
 	}
 
