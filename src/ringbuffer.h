@@ -70,3 +70,14 @@ static inline void ringbuffer_write(ringbuffer_t *ring, const void *data, uint16
 
 	ring->write_ptr %= ring->size;
 }
+
+static inline void ringbuffer_advance_read(ringbuffer_t *ring, uint16_t len)
+{
+	if (len > ring->size)
+	{
+		len -= ring->size;
+	}
+
+	ring->read_ptr += len;
+	ring->read_ptr %= ring->size;
+}
