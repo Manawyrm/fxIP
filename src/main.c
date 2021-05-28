@@ -26,10 +26,10 @@ static int casioos_Serial_Close()
 	 return 0;
 }
 
-uint8_t datatemp[128] = {0};
 
 int main(void)
 {
+	ui_init();
 	fxip_log("fxIP, build date:");
 	fxip_log(&__TIMESTAMP__[4]);
 	fxip_log("manawyrm & TobleMiner");

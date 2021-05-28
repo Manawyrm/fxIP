@@ -5,9 +5,6 @@
 
 #include "util.h"
 
-uint8_t keyboard_input_buffer[128];
-uint8_t keyboard_input_bufpos = 0;
-
 uint8_t shift = 0; 
 uint8_t alpha = 0;
 
@@ -79,6 +76,8 @@ int ui_keycode_character(int keycode)
 int ui_handle_keyboard()
 {
 	// keyboard input
+	uint8_t ui_needs_update = 0;
+
 	int character = -1;
 	key_event_t event = pollevent();
 	if (event.type == KEYEV_DOWN)
@@ -110,8 +109,8 @@ int ui_handle_keyboard()
 		{
 			if (pages[pageid].key == event.key)
 			{
-				current_page = pages[pageid];
-				ui_update();
+				current_page = &pages[pageid];
+				ui_needs_update = 1;
 			}
 		}
 
@@ -120,28 +119,81 @@ int ui_handle_keyboard()
 			return -1;
 		}
 
-		// Text input
-		if ((character = ui_keycode_character(event.key)) >= 0)
+		if (current_page->input_enabled)
 		{
-			// input buffer full
-			if (keyboard_input_bufpos == sizeof(keyboard_input_buffer) - 1)
-				return 0;
+			// horizontal scrolling in the input line
+			if (event.key == KEY_LEFT)
+			{
+				if (current_page->input_scroll_offset)
+				{
+					current_page->input_scroll_offset--;
+				}
+			}
+			if (event.key == KEY_RIGHT)
+			{
+				if (current_page->input_offset > UI_DISPLAY_CHARS)
+				{
+					if (current_page->input_scroll_offset < current_page->input_offset - UI_DISPLAY_CHARS)
+					{
+						current_page->input_scroll_offset++;
+					}
+				}
+			}
 
-			keyboard_input_buffer[keyboard_input_bufpos] = character;
-			keyboard_input_bufpos++;
-		}
-		if (event.key == KEY_DEL)
-		{
-			keyboard_input_buffer[keyboard_input_bufpos - 1] = 0x00;
-			keyboard_input_bufpos--;
-		}
-		if (event.key == KEY_EXE)
-		{
-			keyboard_input_buffer[keyboard_input_bufpos] = 0x00;
-			fxip_printf("%s", keyboard_input_buffer);
-			keyboard_input_bufpos = 0;
+			// Text input
+			if ((character = ui_keycode_character(event.key)) >= 0)
+			{
+				// input buffer not full
+				if (current_page->input_offset <= current_page->input_buffer_size - 2)
+				{
+					current_page->input_buffer[current_page->input_offset] = character;
+					current_page->input_offset++;
+
+					if (current_page->input_offset > UI_DISPLAY_CHARS)
+					{
+						current_page->input_scroll_offset = current_page->input_offset - UI_DISPLAY_CHARS;
+					}
+				}
+			}
+			if (event.key == KEY_DEL)
+			{
+				if (current_page->input_offset)
+				{
+					current_page->input_buffer[current_page->input_offset - 1] = 0x00;
+					current_page->input_offset--;
+
+					if (current_page->input_scroll_offset)
+					{
+						if (current_page->input_offset > UI_DISPLAY_CHARS)
+						{
+							current_page->input_scroll_offset = current_page->input_offset - UI_DISPLAY_CHARS;
+						}
+						else
+						{
+							current_page->input_scroll_offset = 0;
+						}
+					}
+				}
+			}
+			if (event.key == KEY_EXE)
+			{
+				if (current_page->input_offset)
+				{
+					current_page->input_buffer[current_page->input_offset] = 0x00;
+					current_page->input_submit_callback(current_page);
+					memset(current_page->input_buffer, 0x00, current_page->input_offset);
+					current_page->input_offset = 0;
+					current_page->input_scroll_offset = 0;
+				}
+			}
+			ui_needs_update = 1;
 		}
 
+	}
+
+	if (ui_needs_update)
+	{
+		ui_update();
 	}
 	return 0;
 }

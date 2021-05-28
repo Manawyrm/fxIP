@@ -7,7 +7,7 @@
 #include "util.h"
 #include "ui.h"
 
-log_msg_t display_scroll_buf[6] = {{0}};
+log_msg_t display_scroll_buf[5] = {{0}};
 unsigned int log_idx = 0;
 
 void fxip_log(const char *msg)
