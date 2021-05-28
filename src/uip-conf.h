@@ -149,7 +149,8 @@ typedef unsigned short uip_stats_t;
 /*#include "smtp.h"*/
 /*#include "uip/hello-world.h"*/
 //#include "uip/httpd.h"
-#include "uip/webserver.h"
+/*#include "uip/webserver.h"*/
+#include "uip/irc.h"
 /*#include "dhcpc.h"*/
 /*#include "resolv.h"*/
 /*#include "webclient.h"*/

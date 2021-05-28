@@ -12,7 +12,6 @@ struct timer periodic_timer, arp_timer;
 void network_init()
 {
 	slipdev_init();
-	clock_setup();
 	timer_set(&periodic_timer, CLOCK_SECOND / 2);
 
 	uip_init();
@@ -25,8 +24,14 @@ void network_init()
 	uip_ipaddr(ipaddr, 255,255,255,0);
 	uip_setnetmask(ipaddr);
 
-	httpd_init();
+	//httpd_init();
+	irc_init();
+
+	uip_ipaddr(ipaddr, 10,10,10,1);
+	irc_connect(ipaddr);
+
 	fxip_log("app_init() done");
+
 }
 
 void network_poll()
