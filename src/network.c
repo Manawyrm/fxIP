@@ -27,7 +27,10 @@ void network_init()
 	//httpd_init();
 	irc_init();
 
-	uip_ipaddr(ipaddr, 10,10,10,1);
+
+	uip_ipaddr(ipaddr, 188,240,145,102);
+
+	//uip_ipaddr(ipaddr, 10,10,10,1);
 	irc_connect(ipaddr);
 
 	fxip_log("app_init() done");

@@ -289,10 +289,12 @@ PT_THREAD(psock_readto(register struct psock *psock, unsigned char c))
 		     &psock->readptr,
 		     &psock->readlen) & BUF_FOUND) == 0);
   
-  if(psock_datalen(psock) == 0) {
+  /*if(psock_datalen(psock) == 0) {
     psock->state = STATE_NONE;
-    PT_RESTART(&psock->psockpt);
-  }
+    PT_INIT(&psock->psockpt);
+  }*/
+
+  //fxip_log("ptend");
   PT_END(&psock->psockpt);
 }
 /*---------------------------------------------------------------------------*/

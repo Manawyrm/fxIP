@@ -36,26 +36,35 @@ void fxip_printf(const char * format, ...)
   va_end (args);
 }
 
-/*
+
 void fxip_print_hexdump(const void *addr, uint16_t size)
 {
     uint16_t printed = 0;
+    uint16_t bufferoffset = 0;
     uint16_t i;
+
+    memset(printf_buffer, 0x00, sizeof(printf_buffer));
+
     const unsigned char* pc = addr;
     for (i=0; i<size; ++i)
     {
         int  g;
         g = (*(pc+i) >> 4) & 0xf;
         g += g >= 10 ? 'a'-10 : '0';
-        rom_putchar_uart(g);
+        printf_buffer[bufferoffset++] = g;
         printed++;
 
         g = *(pc+i) & 0xf;
         g += g >= 10 ? 'a'-10 : '0';
-        rom_putchar_uart(g);
+        printf_buffer[bufferoffset++] = g;
         printed++;
-        if (printed % 32 == 0) rom_putchar_uart('\n');
-        else if (printed % 4 == 0) rom_putchar_uart(' ');
+        if (printed % 16 == 0)
+        {
+          fxip_log (printf_buffer);
+          bufferoffset = 0;
+          memset(printf_buffer, 0x00, sizeof(printf_buffer));
+        } 
+        else if (printed % 4 == 0) printf_buffer[bufferoffset++] = ' ';
     }
+    fxip_log (printf_buffer);
 }
-*/
