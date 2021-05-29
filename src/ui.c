@@ -8,23 +8,30 @@
 
 #include "util.h"
 #include "log.h"
-
 #include "uip/uip.h"
 
 extern struct uip_stats uip_stat;
 
+uint8_t cursor_blink = 0;
+
 char page_logs_input_buffer[128];
+uint8_t objectlog_storage[1024];
+objectlog_t objectlog;
+
+void ui_cursor_blink()
+{
+	cursor_blink = !cursor_blink;
+}
 
 void ui_page_logs_submit(page_t *page)
 {
 	fxip_log(page->input_buffer);
 }
 
-
 const page_t pages[] = {
 	{
 		/* Logs */
-		.id	= 0,
+		.id	= PAGE_LOGS,
 		.key	= KEY_F1,
 		.render_callback = ui_render_logs,
 		.input_enabled = 1,
@@ -34,14 +41,14 @@ const page_t pages[] = {
 	},
 	{
 		/* Statistics */
-		.id	= 1,
+		.id	= PAGE_STATISTICS,
 		.key	= KEY_F2,
 		.render_callback = ui_render_statistics,
 		.input_enabled = 0
 	},
 	{
 		/* IRC */
-		.id	= 2,
+		.id	= PAGE_IRC,
 		.key	= KEY_F3,
 		.render_callback = ui_render_irc,
 		.input_enabled = 0
@@ -62,10 +69,22 @@ void ui_update()
 		char *scrolled_input = current_page->input_buffer;
 		if (current_page->input_offset > UI_DISPLAY_CHARS)
 		{
-			scrolled_input += MIN(current_page->input_scroll_offset, 
+			scrolled_input += MIN(current_page->input_scroll_offset,
 				current_page->input_offset - UI_DISPLAY_CHARS);
 		}
-		ui_printf(1, 56, C_WHITE, scrolled_input);
+		uint16_t scrolled_input_length = strlen(scrolled_input);
+
+		dtext_opt(1, 56, C_WHITE, C_NONE, DTEXT_LEFT, DTEXT_TOP, scrolled_input, scrolled_input_length);
+
+		if (cursor_blink)
+		{
+			int width = 0;
+			int height = 0;
+
+			dnsize(scrolled_input, scrolled_input_length, NULL, &width, &height);
+
+			dtext_opt(1 + width, 56, C_WHITE, C_NONE, DTEXT_LEFT, DTEXT_TOP, "_", 1);
+		}
 
 	}
 
@@ -82,11 +101,70 @@ void ui_update_logs()
 
 void ui_render_logs(page_t *page)
 {
-	for (unsigned int i = 0; i < ARRAY_SIZE(display_scroll_buf); i++)
+	for (unsigned int i = 0; i < objectlog.num_entries && i < UI_DISPLAY_LINES ; i++)
 	{
-		unsigned int line_idx = (log_idx + i) % ARRAY_SIZE(display_scroll_buf);
-		dtext(1, i * 10, C_BLACK, display_scroll_buf[line_idx]);
+		uint8_t pencil_x = 0;
+		uint8_t pencil_y = (UI_DISPLAY_LINES - i) * 8;
+		int width = 0;
+		int height = 0;
+
+		message_hdr_t hdr;
+		uint8_t length;
+		objectlog_iterator_t iter;
+		const uint8_t *ptr;
+		ptr = ui_objectlog_get_message(&objectlog, -i, &iter, &hdr, &length);
+		if (!ptr)
+		{
+			continue;
+		}
+
+		if (hdr.page_id == PAGE_LOGS)
+		{
+			do {
+				if (length)
+				{
+					dtext_opt(pencil_x, pencil_y, C_BLACK, C_NONE, DTEXT_LEFT, DTEXT_TOP, ptr, length);
+
+					dnsize(ptr, length, NULL, &width, &height);
+					pencil_x += width;
+					if (pencil_x > UI_DISPLAY_PIXEL_X)
+					{
+						goto next;
+					}
+				}
+
+				iter = objectlog_next(&objectlog, iter);
+				ptr = objectlog_get_fragment(&objectlog, iter, &length);
+			} while (iter >= 0);
+		}
+
+next:
 	}
+}
+
+const void *ui_objectlog_get_message(objectlog_t *log, int object_idx, objectlog_iterator_t *riter, message_hdr_t *hdr, uint8_t *len)
+{
+	uint8_t length;
+	uint8_t bytes_read = 0;
+	const uint8_t *ptr;
+	objectlog_iterator_t iter = objectlog_iterator(log, object_idx);
+
+	if (iter < 0)
+	{
+		return NULL;
+	}
+
+	do {
+		ptr = objectlog_get_fragment(log, iter, &length);
+
+		uint8_t cpylen = MIN(sizeof(message_hdr_t) - bytes_read, length);
+		memcpy(((uint8_t*)hdr) + bytes_read, ptr, cpylen);
+		bytes_read += cpylen;
+	} while (bytes_read < sizeof(message_hdr_t));
+
+	*riter = iter;
+	*len = length - bytes_read;
+	return ptr + bytes_read;
 }
 
 void ui_init()
@@ -98,7 +176,26 @@ void ui_init()
 			memset(pages[i].input_buffer, 0x00, pages[i].input_buffer_size);
 		}
 	}
+
+	objectlog_init(&objectlog, objectlog_storage, sizeof(objectlog_storage));
 }
+
+void ui_write_log(uint8_t page_id, uint8_t type, uint8_t channel, char *data, uint16_t length)
+{
+	message_hdr_t hdr;
+	hdr.page_id = page_id;
+	hdr.type = type;
+	hdr.channel = channel;
+
+	scatter_object_t scatter_list[] = {
+		{ .ptr = &hdr, .len = sizeof(hdr) },
+		{ .ptr = data, .len = length },
+		{ .len = 0 }
+	};
+
+	objectlog_write_scattered_object(&objectlog, scatter_list);
+}
+
 
 void ui_render_statistics(page_t *page)
 {

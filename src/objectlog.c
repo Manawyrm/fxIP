@@ -72,17 +72,26 @@ void objectlog_init(objectlog_t *log, void *storage, uint16_t size) {
 	log->num_entries = 0;
 }
 
-void objectlog_write_object(objectlog_t *log, const void *data, uint16_t len) {
-	const uint8_t *data8 = data;
+void objectlog_write_scattered_object(objectlog_t *log, const scatter_object_t *scatter_list)
+{
+	const scatter_object_t *sc_list = scatter_list;
+	const uint8_t *data8;
 	uint16_t num_fragments;
-	uint16_t total_len;
+	uint16_t total_len = 0;
 	uint16_t new_last;
 	uint16_t free_space;
 	uint16_t log_end = get_next_entry(log, log->ptr_last);
+	uint16_t scatter_entry_offset = 0;
+
+	while (sc_list->len)
+	{
+		total_len += sc_list->len + 1;
+		sc_list++;
+	}
 
 	/* Calculate number of fragments required to store data */
-	num_fragments = DIV_ROUND_UP(len, MAX_FRAGMENT_LEN);
-	total_len = len + num_fragments;
+	num_fragments = DIV_ROUND_UP(total_len, MAX_FRAGMENT_LEN);
+	total_len += num_fragments;
 	/* Special case: If we wrap we need an extra header! */
 	if (log_end + total_len > log->ring.size) {
 		total_len++;
@@ -102,23 +111,44 @@ void objectlog_write_object(objectlog_t *log, const void *data, uint16_t len) {
 
 	/* Store start of object header */
 	new_last = log->ring.write_ptr;
+
+	sc_list = scatter_list;
+	data8 = sc_list->ptr;
+
 	/* Write object as @num_fragments fragments */
-	while(len) {
-		uint16_t fragment_len = len;
+	while(sc_list->len) {
+		uint16_t fragment_len = sc_list->len - scatter_entry_offset;
 		/* Limit fragment size to value representable in 7 bits */
 		if (fragment_len > MAX_FRAGMENT_LEN) {
 			fragment_len = MAX_FRAGMENT_LEN;
 		}
+
 		/* Don't create fragments wrapping around the end of ring buffer */
 		if (fragment_len + 1 > log->ring.size - log->ring.write_ptr) {
 			fragment_len = log->ring.size - log->ring.write_ptr - 1;
 		}
-		objectlog_add_fragment(log, data8, fragment_len, fragment_len == len);
-		len -= fragment_len;
+
+		scatter_entry_offset += fragment_len;
+		objectlog_add_fragment(log, data8, fragment_len, !(&sc_list[1])->len && scatter_entry_offset >= sc_list->len);
 		data8 += fragment_len;
+		if (scatter_entry_offset >= sc_list->len)
+		{
+			sc_list++;
+			data8 = sc_list->ptr;
+			scatter_entry_offset = 0;
+		}
 	}
 	log->ptr_last = new_last;
 	log->num_entries++;
+}
+
+void objectlog_write_object(objectlog_t *log, const void *data, uint16_t len) {
+	scatter_object_t scatter_list[] = {
+		{ .ptr = data, .len = len },
+		{ .len = 0 }
+	};
+
+	objectlog_write_scattered_object(log, scatter_list);
 }
 
 void objectlog_write_string(objectlog_t *log, const char *str) {

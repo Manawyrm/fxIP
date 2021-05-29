@@ -5,6 +5,7 @@
 
 #include "log.h"
 #include "slipdev.h"
+#include "ui.h"
 
 uip_ipaddr_t ipaddr;
 struct timer periodic_timer, arp_timer;
@@ -50,11 +51,12 @@ void network_poll()
 		{
 			slipdev_send();
 		}
-		
-	} 
+
+	}
 	else if(timer_expired(&periodic_timer))
 	{
 		timer_reset(&periodic_timer);
+
 		for(int i = 0; i < UIP_CONNS; i++)
 		{
 			uip_periodic(i);

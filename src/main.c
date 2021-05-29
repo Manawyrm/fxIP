@@ -29,16 +29,16 @@ static int casioos_Serial_Close()
 
 int main(void)
 {
+	gint_world_switch(GINT_CALL(casioos_Serial_Init));
+	scif_init();
+
 	ui_init();
 	fxip_log("fxIP, build date:");
 	fxip_log(&__TIMESTAMP__[4]);
 	fxip_log("manawyrm & TobleMiner");
 
-	gint_world_switch(GINT_CALL(casioos_Serial_Init));
-	scif_init();
-
 	clock_setup();
-	
+
 	/*uint32_t lastscifwritetime = clock_time();
 	while (true)
 	{
@@ -67,6 +67,7 @@ int main(void)
 
 	network_init();
 
+	uint32_t last_clock_time = 0;
 	while (true)
 	{
 		network_poll();
@@ -78,9 +79,12 @@ int main(void)
 			return 1;
 		}
 
-		if (clock_time() % 10 == 0)
+		uint32_t now = clock_time();
+		if (last_clock_time != now && now % 5 == 0)
 		{
+			ui_cursor_blink();
 			ui_update();
+			last_clock_time = now;
 		}
 	}
 
