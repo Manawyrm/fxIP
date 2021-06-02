@@ -1,3 +1,6 @@
+#include <stdlib.h>
+#include <gint/rtc.h>
+
 #include "network.h"
 #include "uip/uip.h"
 #include "uip/timer.h"
@@ -15,6 +18,8 @@ void network_init()
 	slipdev_init();
 	timer_set(&periodic_timer, CLOCK_SECOND / 2);
 
+	srand(rtc_ticks());
+
 	uip_init();
 	fxip_log("uip_init() done");
 
@@ -29,9 +34,8 @@ void network_init()
 	irc_init();
 
 
-	//uip_ipaddr(ipaddr, 188,240,145,102);
-
-	uip_ipaddr(ipaddr, 10,10,10,1);
+	uip_ipaddr(ipaddr, 188,240,145,102);
+	//uip_ipaddr(ipaddr, 10,10,10,1);
 	irc_connect(ipaddr);
 
 	fxip_log("app_init() done");

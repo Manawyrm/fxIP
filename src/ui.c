@@ -101,10 +101,11 @@ void ui_update_logs()
 
 void ui_render_logs(page_t *page)
 {
-	for (unsigned int i = 0; i < objectlog.num_entries && i < UI_DISPLAY_LINES ; i++)
+	uint16_t lines_drawn = 0;
+	for (unsigned int i = 0; i < objectlog.num_entries && lines_drawn < UI_DISPLAY_LINES; i++)
 	{
 		uint8_t pencil_x = 0;
-		uint8_t pencil_y = (UI_DISPLAY_LINES - i) * 8;
+		uint8_t pencil_y = (UI_DISPLAY_LINES - lines_drawn) * 8;
 		int width = 0;
 		int height = 0;
 
@@ -118,7 +119,7 @@ void ui_render_logs(page_t *page)
 			continue;
 		}
 
-		if (hdr.page_id == PAGE_LOGS)
+		if (hdr.page_id == page->id)
 		{
 			do {
 				if (length)
@@ -136,9 +137,9 @@ void ui_render_logs(page_t *page)
 				iter = objectlog_next(&objectlog, iter);
 				ptr = objectlog_get_fragment(&objectlog, iter, &length);
 			} while (iter >= 0);
-		}
-
 next:
+			lines_drawn++;
+		}
 	}
 }
 
@@ -196,7 +197,6 @@ void ui_write_log(uint8_t page_id, uint8_t type, uint8_t channel, char *data, ui
 	objectlog_write_scattered_object(&objectlog, scatter_list);
 }
 
-
 void ui_render_statistics(page_t *page)
 {
 	ui_printf(0, 0, C_BLACK, "IP RX: %u TX: %u", uip_stat.ip.recv, uip_stat.ip.sent);
@@ -210,9 +210,48 @@ void ui_render_statistics(page_t *page)
 
 void ui_render_irc(page_t *page)
 {
-	dtext(1, 10, C_BLACK, "Invalid page.");
-}
+	uint16_t lines_drawn = 0;
+	for (unsigned int i = 0; i < objectlog.num_entries && lines_drawn < UI_DISPLAY_LINES; i++)
+	{
+		uint8_t pencil_x = 0;
+		uint8_t pencil_y = (UI_DISPLAY_LINES - lines_drawn) * 8;
+		int width = 0;
+		int height = 0;
 
+		message_hdr_t hdr;
+		uint8_t length;
+		objectlog_iterator_t iter;
+		const uint8_t *ptr;
+		ptr = ui_objectlog_get_message(&objectlog, -i, &iter, &hdr, &length);
+		if (!ptr)
+		{
+			continue;
+		}
+
+		if (hdr.page_id == page->id)
+		{
+			do
+			{
+				if (length)
+				{
+					dtext_opt(pencil_x, pencil_y, C_BLACK, C_NONE, DTEXT_LEFT, DTEXT_TOP, ptr, length);
+
+					dnsize(ptr, length, NULL, &width, &height);
+					pencil_x += width;
+					if (pencil_x > UI_DISPLAY_PIXEL_X)
+					{
+						goto next;
+					}
+				}
+
+				iter = objectlog_next(&objectlog, iter);
+				ptr = objectlog_get_fragment(&objectlog, iter, &length);
+			} while (iter >= 0);
+next:
+			lines_drawn++;
+		}
+	}
+}
 
 extern char printf_buffer[128];
 void ui_printf(int x, int y, int fg, const char * format, ...)

@@ -13,7 +13,6 @@ unsigned char irc_connect(u16_t *server);
 
 typedef enum { 
   IRC_CONNECTION_NEW,
-  IRC_CONNECTION_NICK,
   IRC_CONNECTION_USER,
   IRC_CONNECTION_JOIN,
   IRC_CONNECTION_ESTABLISHED
