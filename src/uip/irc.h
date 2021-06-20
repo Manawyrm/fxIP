@@ -29,109 +29,16 @@ typedef struct irc_state
   uint8_t inputbuffer[128];
 } uip_tcp_appstate_t;
 
+typedef struct {
+  char *message;  // :tungsten.libera.chat 250 asdfCasio :Highest connection count: 6972 (6971 clients) (71075 connections received)
+  uint16_t length;
+
+  char *prefix;   // tungsten.libera.chat
+  char *message_without_prefix; // 250 asdfCasio :Highest connection count: 6972 (6971 clients) (71075 connections received)
+  char *command; // 250
+  char *command_arguments;
+} irc_message;
 
 #ifndef UIP_APPCALL
 #define UIP_APPCALL irc_appcall
 #endif
-
-
-  /*PSOCK_READTO(&s.psock, ISO_nl);
-   
-  if(strncmp(s.inputbuffer, irc_220, 3) != 0) {
-    PSOCK_CLOSE(&s.psock);
-    irc_done(2);
-    PSOCK_EXIT(&s.psock);
-  }
-  
-  PSOCK_SEND_STR(&s.psock, (char *)irc_helo);
-  PSOCK_SEND_STR(&s.psock, localhostname);
-  PSOCK_SEND_STR(&s.psock, (char *)irc_crnl);
-
-  PSOCK_READTO(&s.psock, ISO_nl);
-  
-  if(s.inputbuffer[0] != ISO_2) {
-    PSOCK_CLOSE(&s.psock);
-    irc_done(3);
-    PSOCK_EXIT(&s.psock);
-  }
-
-  PSOCK_SEND_STR(&s.psock, (char *)irc_mail_from);
-  PSOCK_SEND_STR(&s.psock, s.from);
-  PSOCK_SEND_STR(&s.psock, (char *)irc_crnl);
-
-  PSOCK_READTO(&s.psock, ISO_nl);
-  
-  if(s.inputbuffer[0] != ISO_2) {
-    PSOCK_CLOSE(&s.psock);
-    irc_done(4);
-    PSOCK_EXIT(&s.psock);
-  }
-
-  PSOCK_SEND_STR(&s.psock, (char *)irc_rcpt_to);
-  PSOCK_SEND_STR(&s.psock, s.to);
-  PSOCK_SEND_STR(&s.psock, (char *)irc_crnl);
-
-  PSOCK_READTO(&s.psock, ISO_nl);
-  
-  if(s.inputbuffer[0] != ISO_2) {
-    PSOCK_CLOSE(&s.psock);
-    irc_done(5);
-    PSOCK_EXIT(&s.psock);
-  }
-  
-  if(s.cc != 0) {
-    PSOCK_SEND_STR(&s.psock, (char *)irc_rcpt_to);
-    PSOCK_SEND_STR(&s.psock, s.cc);
-    PSOCK_SEND_STR(&s.psock, (char *)irc_crnl);
-
-    PSOCK_READTO(&s.psock, ISO_nl);
-  
-    if(s.inputbuffer[0] != ISO_2) {
-      PSOCK_CLOSE(&s.psock);
-      irc_done(6);
-      PSOCK_EXIT(&s.psock);
-    }
-  }
-  
-  PSOCK_SEND_STR(&s.psock, (char *)irc_data);
-  
-  PSOCK_READTO(&s.psock, ISO_nl);
-  
-  if(s.inputbuffer[0] != ISO_3) {
-    PSOCK_CLOSE(&s.psock);
-    irc_done(7);
-    PSOCK_EXIT(&s.psock);
-  }
-
-  PSOCK_SEND_STR(&s.psock, (char *)irc_to);
-  PSOCK_SEND_STR(&s.psock, s.to);
-  PSOCK_SEND_STR(&s.psock, (char *)irc_crnl);
-  
-  if(s.cc != 0) {
-    PSOCK_SEND_STR(&s.psock, (char *)irc_cc);
-    PSOCK_SEND_STR(&s.psock, s.cc);
-    PSOCK_SEND_STR(&s.psock, (char *)irc_crnl);
-  }
-  
-  PSOCK_SEND_STR(&s.psock, (char *)irc_from);
-  PSOCK_SEND_STR(&s.psock, s.from);
-  PSOCK_SEND_STR(&s.psock, (char *)irc_crnl);
-  
-  PSOCK_SEND_STR(&s.psock, (char *)irc_subject);
-  PSOCK_SEND_STR(&s.psock, s.subject);
-  PSOCK_SEND_STR(&s.psock, (char *)irc_crnl);
-
-  PSOCK_SEND(&s.psock, s.msg, s.msglen);
-  
-  PSOCK_SEND_STR(&s.psock, (char *)irc_crnlperiodcrnl);
-
-  PSOCK_READTO(&s.psock, ISO_nl);
-  if(s.inputbuffer[0] != ISO_2) {
-    PSOCK_CLOSE(&s.psock);
-    irc_done(8);
-    PSOCK_EXIT(&s.psock);
-  }
-
-  PSOCK_SEND_STR(&s.psock, (char *)irc_quit);
-  irc_done(irc_ERR_OK);
-  */

@@ -75,13 +75,13 @@ int main(void)
 		if (ui_handle_keyboard())
 		{
 			// Exit
-			irc_exit();
+			/*irc_exit();
 
 			uint32_t now = clock_time(); 
 			while (clock_time() - now < 50)
 			{
 				
-			}
+			}*/
 			
 			gint_world_switch(GINT_CALL(casioos_Serial_Close));
 			return 1;

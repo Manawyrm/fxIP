@@ -17,7 +17,8 @@ void ui_printf(int x, int y, int fg, const char * format, ...);
 typedef enum {
 	PAGE_LOGS,
 	PAGE_STATISTICS,
-	PAGE_IRC
+	PAGE_IRC_OVERVIEW,
+	PAGE_IRC_CHANNEL
 } page_type_t;
 
 struct page;
@@ -33,6 +34,7 @@ struct page
 	uint16_t input_offset;
 	uint16_t input_scroll_offset;
 	void (*input_submit_callback)(struct page *page);
+	uint16_t scroll_x;
 };
 
 typedef struct page page_t;
@@ -51,4 +53,4 @@ void ui_render_irc(page_t *page);
 const void *ui_objectlog_get_message(objectlog_t *log, int object_idx, objectlog_iterator_t *riter, message_hdr_t *hdr, uint8_t *len);
 
 extern page_t *current_page;
-extern const page_t pages[3];
+extern const page_t pages[4];

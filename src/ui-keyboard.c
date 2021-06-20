@@ -188,6 +188,24 @@ int ui_handle_keyboard()
 			}
 			ui_needs_update = 1;
 		}
+		else
+		{
+			// horizontal scrolling in the buffer
+			if (event.key == KEY_LEFT)
+			{
+				if (current_page->scroll_x)
+				{
+					current_page->scroll_x--;
+				}
+			}
+			if (event.key == KEY_RIGHT)
+			{
+				current_page->scroll_x++;
+			}
+			
+			ui_needs_update = 1;
+		}
+		
 
 	}
 

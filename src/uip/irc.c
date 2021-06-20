@@ -6,11 +6,90 @@
 
 #include <string.h>
 
+#define _GNU_SOURCE
+#include "fxlibc/string.h"
+
 static char *localhostname;
+
+static const char irc_command_privmsg[] = "PRIVMSG";
+static const char irc_command_error[] = "ERROR";
+
+static int irc_parse_command(irc_message message)
+{
+	char *whitespace;
+
+	if (!strlen(message.command))
+	{
+		ui_write_log(PAGE_IRC_OVERVIEW, 0, 0, "empty cmd", 11);
+		return; 
+	}
+
+	if (strncasecmp(message.command, irc_command_privmsg, strlen(message.command)) == 0)
+	{
+		//ui_write_log(PAGE_IRC_CHANNEL, 0, 0, "privmsg", 7);
+
+		whitespace = memchr(message.command_arguments, ' ', strlen(message.command_arguments));
+		if (whitespace == NULL)
+			return;
+
+		ui_write_log(PAGE_IRC_CHANNEL, 0, 0, &whitespace[2], strlen(&whitespace[2]) - 1);
+
+		return;
+	}
+	else
+	{
+		ui_write_log(PAGE_IRC_OVERVIEW, 0, 0, message.command_arguments, strlen(message.command_arguments));
+	}
+	
+}
 
 static int irc_parse_line(char *data, uint16_t length)
 {
-	ui_write_log(PAGE_IRC, 0, 0, data, length );
+	char *whitespace;
+
+	data[length - 1] = 0x00;
+
+	irc_message message;
+	message.message = data;
+	message.length = length;
+	message.prefix = NULL;
+	message.message_without_prefix = NULL;
+	message.command = NULL;
+	message.command_arguments = NULL;
+
+	// Prefix present?
+	if (data[0] == ':')
+	{
+		whitespace = memchr(data, ' ', length);
+		if (whitespace == NULL)
+		{
+			ui_write_log(PAGE_IRC_OVERVIEW, 0, 0, "no ws found", 11);
+			return;
+		}
+
+		message.prefix = &data[1];
+		whitespace[0] = 0x00;
+
+		message.message_without_prefix = &whitespace[1];
+	}
+	else
+	{
+		message.message_without_prefix = data;
+	}
+
+	// split message into command and command args
+	whitespace = memchr(message.message_without_prefix, ' ', strlen(message.message_without_prefix));
+	if (whitespace == NULL)
+	{
+		ui_write_log(PAGE_IRC_OVERVIEW, 0, 0, "no ws found", 11);
+		return;
+	}
+	message.command = &message.message_without_prefix[0];
+	whitespace[0] = 0x00;
+
+	message.command_arguments = &whitespace[1];
+
+	irc_parse_command(message);
 }
 
 /*---------------------------------------------------------------------------*/

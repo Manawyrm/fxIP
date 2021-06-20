@@ -15,7 +15,7 @@ extern struct uip_stats uip_stat;
 uint8_t cursor_blink = 0;
 
 char page_logs_input_buffer[128];
-uint8_t objectlog_storage[1024];
+uint8_t objectlog_storage[2048];
 objectlog_t objectlog;
 
 void ui_cursor_blink()
@@ -47,9 +47,16 @@ const page_t pages[] = {
 		.input_enabled = 0
 	},
 	{
-		/* IRC */
-		.id	= PAGE_IRC,
+		/* IRC Overview */
+		.id	= PAGE_IRC_OVERVIEW,
 		.key	= KEY_F3,
+		.render_callback = ui_render_irc,
+		.input_enabled = 0
+	},
+	{
+		/* IRC Channel */
+		.id	= PAGE_IRC_CHANNEL,
+		.key	= KEY_F4,
 		.render_callback = ui_render_irc,
 		.input_enabled = 0
 	},
