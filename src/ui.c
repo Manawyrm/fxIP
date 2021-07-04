@@ -31,7 +31,7 @@ void ui_page_logs_submit(page_t *page)
 const page_t pages[] = {
 	{
 		/* Logs */
-		.id	= PAGE_LOGS,
+		.id		= PAGE_LOGS,
 		.key	= KEY_F1,
 		.render_callback = ui_render_logs,
 		.input_enabled = 1,
@@ -41,23 +41,23 @@ const page_t pages[] = {
 	},
 	{
 		/* Statistics */
-		.id	= PAGE_STATISTICS,
+		.id		= PAGE_STATISTICS,
 		.key	= KEY_F2,
 		.render_callback = ui_render_statistics,
 		.input_enabled = 0
 	},
 	{
 		/* IRC Overview */
-		.id	= PAGE_IRC_OVERVIEW,
+		.id		= PAGE_IRC_OVERVIEW,
 		.key	= KEY_F3,
-		.render_callback = ui_render_irc,
+		.render_callback = ui_render_logs,
 		.input_enabled = 0
 	},
 	{
 		/* IRC Channel */
-		.id	= PAGE_IRC_CHANNEL,
+		.id		= PAGE_IRC_CHANNEL,
 		.key	= KEY_F4,
-		.render_callback = ui_render_irc,
+		.render_callback = ui_render_logs,
 		.input_enabled = 0
 	},
 };
@@ -117,17 +117,20 @@ void ui_render_logs(page_t *page)
 		int height = 0;
 
 		message_hdr_t hdr;
+		hdr.page_id = 0xFF;
 		uint8_t length;
 		objectlog_iterator_t iter;
 		const uint8_t *ptr;
-		ptr = ui_objectlog_get_message(&objectlog, -i, &iter, &hdr, &length);
-		if (!ptr)
-		{
-			continue;
-		}
+		ptr = ui_objectlog_get_message(&objectlog, -i, page->scroll_x, &iter, &hdr, &length);
 
 		if (hdr.page_id == page->id)
 		{
+			if (!ptr)
+			{
+				lines_drawn++;
+				continue;
+			}
+
 			do {
 				if (length)
 				{
@@ -137,20 +140,18 @@ void ui_render_logs(page_t *page)
 					pencil_x += width;
 					if (pencil_x > UI_DISPLAY_PIXEL_X)
 					{
-						goto next;
+						break;
 					}
 				}
-
 				iter = objectlog_next(&objectlog, iter);
 				ptr = objectlog_get_fragment(&objectlog, iter, &length);
 			} while (iter >= 0);
-next:
 			lines_drawn++;
 		}
 	}
 }
 
-const void *ui_objectlog_get_message(objectlog_t *log, int object_idx, objectlog_iterator_t *riter, message_hdr_t *hdr, uint8_t *len)
+const void *ui_objectlog_get_message(objectlog_t *log, int object_idx, unsigned offset, objectlog_iterator_t *riter, message_hdr_t *hdr, uint8_t *len)
 {
 	uint8_t length;
 	uint8_t bytes_read = 0;
@@ -170,9 +171,38 @@ const void *ui_objectlog_get_message(objectlog_t *log, int object_idx, objectlog
 		bytes_read += cpylen;
 	} while (bytes_read < sizeof(message_hdr_t));
 
+	length -= bytes_read;
+	ptr += bytes_read;
+
+	while (offset)
+	{
+		unsigned int read_len = length;
+
+		if (read_len > offset)
+		{
+			read_len = offset;
+		}
+
+		ptr += read_len;
+		offset -= read_len;
+		length -= read_len;
+
+		if (!length)
+		{
+			iter = objectlog_next(&objectlog, iter);
+
+			if (iter <= 0)
+			{
+				return NULL;
+			}
+
+			ptr = objectlog_get_fragment(&objectlog, iter, &length);
+		}
+	}
+
 	*riter = iter;
-	*len = length - bytes_read;
-	return ptr + bytes_read;
+	*len = length;
+	return ptr;
 }
 
 void ui_init()
@@ -214,7 +244,7 @@ void ui_render_statistics(page_t *page)
 	ui_printf(10, 45, C_BLACK, "Chksum err: %u", uip_stat.tcp.chkerr);
 	ui_printf(10, 55, C_BLACK, "Rexmit: %u", uip_stat.tcp.rexmit);
 }
-
+/*
 void ui_render_irc(page_t *page)
 {
 	uint16_t lines_drawn = 0;
@@ -259,7 +289,7 @@ next:
 		}
 	}
 }
-
+*/
 extern char printf_buffer[128];
 void ui_printf(int x, int y, int fg, const char * format, ...)
 {

@@ -50,7 +50,7 @@ typedef struct message_hdr message_hdr_t;
 void ui_render_logs(page_t *page);
 void ui_render_statistics(page_t *page);
 void ui_render_irc(page_t *page);
-const void *ui_objectlog_get_message(objectlog_t *log, int object_idx, objectlog_iterator_t *riter, message_hdr_t *hdr, uint8_t *len);
+const void *ui_objectlog_get_message(objectlog_t *log, int object_idx, unsigned offset, objectlog_iterator_t *riter, message_hdr_t *hdr, uint8_t *len);
 
 extern page_t *current_page;
 extern const page_t pages[4];

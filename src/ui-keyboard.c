@@ -188,7 +188,9 @@ int ui_handle_keyboard()
 			}
 			ui_needs_update = 1;
 		}
-		else
+
+		// if input is disabled or there is no text in the buffer, scroll the displayed window
+		if (!current_page->input_enabled || current_page->input_offset == 0)
 		{
 			// horizontal scrolling in the buffer
 			if (event.key == KEY_LEFT)
@@ -206,7 +208,6 @@ int ui_handle_keyboard()
 			ui_needs_update = 1;
 		}
 		
-
 	}
 
 	if (ui_needs_update)
