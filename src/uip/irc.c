@@ -13,6 +13,7 @@ static char *localhostname;
 
 static const char irc_command_privmsg[] = "PRIVMSG";
 static const char irc_command_error[] = "ERROR";
+static const char irc_command_ping[] = "PING";
 
 static int irc_parse_command(irc_message message)
 {
@@ -36,11 +37,21 @@ static int irc_parse_command(irc_message message)
 
 		return;
 	}
-	else
-	{
-		ui_write_log(PAGE_IRC_OVERVIEW, 0, 0, message.command_arguments, strlen(message.command_arguments));
-	}
-	
+
+	/*if (strncasecmp(message.command, irc_command_ping, strlen(message.command)) == 0)
+	{ 
+		//ui_write_log(PAGE_IRC_CHANNEL, 0, 0, "privmsg", 7);
+
+		whitespace = memchr(message.command_arguments, ' ', strlen(message.command_arguments));
+		if (whitespace == NULL)
+			return;
+
+		ui_write_log(PAGE_IRC_CHANNEL, 0, 0, &whitespace[2], strlen(&whitespace[2]) - 1);
+
+		return;
+	}*/
+
+	ui_write_log(PAGE_IRC_OVERVIEW, 0, 0, message.command_arguments, strlen(message.command_arguments));
 }
 
 static int irc_parse_line(char *data, uint16_t length)
@@ -113,33 +124,25 @@ static int irc_thread(struct irc_state *s)
 	PSOCK_END(&s->psock);
 }
 
-int irc_send_quit_thread(struct irc_state *s)
+static int irc_send_thread(struct irc_state *s)
 {
-	PSOCK_BEGIN(&s->psock);
+	PSOCK_BEGIN(&s->psock_out);
 
-	PSOCK_SEND_STR(&s->psock, "QUIT meow!\r\n");
+	PSOCK_SEND(&s->psock_out, messagebuffer, messagelength);
+	PSOCK_SEND_STR(&s->psock_out, "\r\n");
 
-	PSOCK_END(&s->psock);
+	messagelength = 0;
+
+	PSOCK_END(&s->psock_out);
 }
 
 /*---------------------------------------------------------------------------*/
-
-void irc_exit(void)
-{
-	struct irc_state *s = &(uip_conn->appstate);
-
-	if (&s->psock == NULL)
-	{
-		return;
-	}
-	irc_send_quit_thread(s);
-}
 
 void irc_appcall(void)
 {
 	struct irc_state *s = &(uip_conn->appstate);
 
-	if (&s->psock == NULL)
+	if (&s->psock == NULL || &s->psock_out == NULL)
 	{
 		return;
 	}
@@ -155,6 +158,11 @@ void irc_appcall(void)
 	}
 
 	irc_thread(&(uip_conn->appstate));
+
+	if (messagelength)
+	{
+		irc_send_thread(&(uip_conn->appstate));
+	}
 }
 
 unsigned char irc_connect(u16_t *server)
@@ -167,10 +175,12 @@ unsigned char irc_connect(u16_t *server)
 	}
 
 	struct irc_state *s = &conn->appstate;
+	messagelength = 0;
 	s->connected = 1;
 	s->connection_state = IRC_CONNECTION_NEW;
 
 	PSOCK_INIT(&s->psock, s->inputbuffer, 1024);
+	PSOCK_INIT(&s->psock_out, s->inputbuffer, 1024);
 
 	return 1;
 }

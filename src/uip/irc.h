@@ -16,8 +16,10 @@ typedef enum {
   IRC_CONNECTION_USER,
   IRC_CONNECTION_JOIN,
   IRC_CONNECTION_ESTABLISHED
-} irc_connection_state_t; 
+} irc_connection_state_t;
 
+uint8_t messagebuffer[256];
+uint16_t messagelength;
 
 typedef struct irc_state
 {
@@ -26,7 +28,11 @@ typedef struct irc_state
 
   uint8_t connected;
   struct psock psock;
+  struct psock psock_out;
+
   uint8_t inputbuffer[128];
+
+
 } uip_tcp_appstate_t;
 
 typedef struct {

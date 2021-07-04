@@ -10,6 +10,7 @@
 #include "network.h"
 #include "clock-arch.h"
 #include "hayes.h"
+#include "uip/irc.h"
 
 int __Serial_Open                    (unsigned char *mode);
 int __Serial_Close                   (int mode);
@@ -75,14 +76,18 @@ int main(void)
 		if (ui_handle_keyboard())
 		{
 			// Exit
-			/*irc_exit();
-
-			uint32_t now = clock_time(); 
-			while (clock_time() - now < 50)
+			if (!messagelength)
 			{
-				
-			}*/
-			
+				memcpy(messagebuffer, "QUIT", 4);
+				messagelength = 4;
+
+				uint32_t now = clock_time();
+				while ((clock_time() - now < 50) && messagelength)
+				{
+					network_poll();
+				}
+			}
+		
 			gint_world_switch(GINT_CALL(casioos_Serial_Close));
 			return 1;
 		}

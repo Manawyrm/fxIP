@@ -9,12 +9,13 @@
 #include "util.h"
 #include "log.h"
 #include "uip/uip.h"
+#include "uip/irc.h"
 
 extern struct uip_stats uip_stat;
 
 uint8_t cursor_blink = 0;
 
-char page_logs_input_buffer[128];
+char page_irc_channel_input_buffer[128];
 uint8_t objectlog_storage[2048];
 objectlog_t objectlog;
 
@@ -23,9 +24,15 @@ void ui_cursor_blink()
 	cursor_blink = !cursor_blink;
 }
 
-void ui_page_logs_submit(page_t *page)
+void ui_page_irc_message_submit(page_t *page)
 {
-	fxip_log(page->input_buffer);
+	unsigned length = snprintf(messagebuffer, sizeof(messagebuffer), "PRIVMSG ##manawyrmtest :%s", page->input_buffer);
+
+	if (length > sizeof(messagebuffer))
+	{
+		length = sizeof(messagebuffer);
+	}
+	messagelength = length;
 }
 
 const page_t pages[] = {
@@ -34,10 +41,7 @@ const page_t pages[] = {
 		.id		= PAGE_LOGS,
 		.key	= KEY_F1,
 		.render_callback = ui_render_logs,
-		.input_enabled = 1,
-		.input_buffer = page_logs_input_buffer,
-		.input_buffer_size = sizeof(page_logs_input_buffer),
-		.input_submit_callback = ui_page_logs_submit
+		.input_enabled = 0,
 	},
 	{
 		/* Statistics */
@@ -58,7 +62,10 @@ const page_t pages[] = {
 		.id		= PAGE_IRC_CHANNEL,
 		.key	= KEY_F4,
 		.render_callback = ui_render_logs,
-		.input_enabled = 0
+		.input_enabled = 1,
+		.input_buffer = page_irc_channel_input_buffer,
+		.input_buffer_size = sizeof(page_irc_channel_input_buffer),
+		.input_submit_callback = ui_page_irc_message_submit
 	},
 };
 
@@ -109,10 +116,17 @@ void ui_update_logs()
 void ui_render_logs(page_t *page)
 {
 	uint16_t lines_drawn = 0;
-	for (unsigned int i = 0; i < objectlog.num_entries && lines_drawn < UI_DISPLAY_LINES; i++)
+	uint8_t max_lines = UI_DISPLAY_LINES;
+
+	if (page->input_enabled)
+	{
+		max_lines--;
+	}
+
+	for (unsigned int i = 0; i < objectlog.num_entries && lines_drawn < max_lines; i++)
 	{
 		uint8_t pencil_x = 0;
-		uint8_t pencil_y = (UI_DISPLAY_LINES - lines_drawn) * 8;
+		uint8_t pencil_y = (max_lines - lines_drawn) * 8;
 		int width = 0;
 		int height = 0;
 
@@ -244,52 +258,7 @@ void ui_render_statistics(page_t *page)
 	ui_printf(10, 45, C_BLACK, "Chksum err: %u", uip_stat.tcp.chkerr);
 	ui_printf(10, 55, C_BLACK, "Rexmit: %u", uip_stat.tcp.rexmit);
 }
-/*
-void ui_render_irc(page_t *page)
-{
-	uint16_t lines_drawn = 0;
-	for (unsigned int i = 0; i < objectlog.num_entries && lines_drawn < UI_DISPLAY_LINES; i++)
-	{
-		uint8_t pencil_x = 0;
-		uint8_t pencil_y = (UI_DISPLAY_LINES - lines_drawn) * 8;
-		int width = 0;
-		int height = 0;
 
-		message_hdr_t hdr;
-		uint8_t length;
-		objectlog_iterator_t iter;
-		const uint8_t *ptr;
-		ptr = ui_objectlog_get_message(&objectlog, -i, &iter, &hdr, &length);
-		if (!ptr)
-		{
-			continue;
-		}
-
-		if (hdr.page_id == page->id)
-		{
-			do
-			{
-				if (length)
-				{
-					dtext_opt(pencil_x, pencil_y, C_BLACK, C_NONE, DTEXT_LEFT, DTEXT_TOP, ptr, length);
-
-					dnsize(ptr, length, NULL, &width, &height);
-					pencil_x += width;
-					if (pencil_x > UI_DISPLAY_PIXEL_X)
-					{
-						goto next;
-					}
-				}
-
-				iter = objectlog_next(&objectlog, iter);
-				ptr = objectlog_get_fragment(&objectlog, iter, &length);
-			} while (iter >= 0);
-next:
-			lines_drawn++;
-		}
-	}
-}
-*/
 extern char printf_buffer[128];
 void ui_printf(int x, int y, int fg, const char * format, ...)
 {
