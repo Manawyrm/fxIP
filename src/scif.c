@@ -68,6 +68,11 @@ int scif_read()
 	return -1;
 }
 
+int scif_read_flush()
+{
+	while (scif_read() != -1);
+}
+
 static void scif_interrupt()
 {
 	// fill TX FIFO

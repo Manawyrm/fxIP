@@ -31,7 +31,7 @@ void ui_page_irc_message_submit(page_t *page)
 	printflength = MIN(sizeof(messagebuffer), printflength);
 	ui_write_log(PAGE_IRC_CHANNEL, 0, 0, messagebuffer, printflength);
 
-	messagelength = snprintf(messagebuffer, sizeof(messagebuffer), "PRIVMSG ##manawyrmtest :%s", page->input_buffer);
+	messagelength = snprintf(messagebuffer, sizeof(messagebuffer), "PRIVMSG ##whitequark :%s", page->input_buffer);
 	messagelength = MIN(sizeof(messagebuffer), messagelength);
 }
 

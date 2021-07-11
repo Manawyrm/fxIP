@@ -127,7 +127,7 @@ static int irc_thread(struct irc_state *s)
 	PSOCK_SEND_STR(&s->psock, "nick CasioFXIRC\r\n");
 	PSOCK_SEND_STR(&s->psock, "user CasioFXIRC 0 0 CasioFX\r\n");
 	PSOCK_READTO(&s->psock, '\n');
-	PSOCK_SEND_STR(&s->psock, "JOIN ##manawyrmtest\r\n");
+	PSOCK_SEND_STR(&s->psock, "JOIN ##whitequark\r\n");
 	PSOCK_READTO(&s->psock, '\n');
 
 

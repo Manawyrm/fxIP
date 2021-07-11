@@ -27,6 +27,7 @@ static int casioos_Serial_Close()
 	 return 0;
 }
 
+//uint8_t atdt_call_buffer[128];
 
 int main(void)
 {
@@ -34,36 +35,31 @@ int main(void)
 	scif_init();
 
 	ui_init();
+	fxip_log("");
 	fxip_log("fxIP, build date:");
 	fxip_log(&__TIMESTAMP__[4]);
 	fxip_log("manawyrm & TobleMiner");
 
 	clock_setup();
 
-	/*uint32_t lastscifwritetime = clock_time();
+	/*while (hayes_send_and_read("ATI3", atdt_call_buffer, sizeof(atdt_call_buffer)) == 0)
+	{
+		uint32_t start = clock_time();
+		while (start + 1 > clock_time());
+	}
+	fxip_log("read 1:");
+	fxip_log(atdt_call_buffer);
+
+	fxip_log("Calling **2");
+
+	scif_read_flush();
+	hayes_send("ATDT **2");
+	
 	while (true)
 	{
-		/*if (clock_time() % 30 == 0 && lastscifwritetime != clock_time())
-		{
-			lastscifwritetime = clock_time();
-
-			if (hayes_send_and_read("ATI2", datatemp, 128))
-			{
-				fxip_printf("recv: %s", datatemp);
-			}
-		}
-
-		if (ui_handle_keyboard())
-		{
-			// Exit
-			gint_world_switch(GINT_CALL(casioos_Serial_Close));
-			return 1;
-		}
-
-		if (clock_time() % 10 == 0)
-		{
-			ui_update();
-		}
+		hayes_read(atdt_call_buffer, sizeof(atdt_call_buffer), 0, 1);
+		fxip_log("read 2:");
+		fxip_log(atdt_call_buffer);
 	}*/
 
 	network_init();
