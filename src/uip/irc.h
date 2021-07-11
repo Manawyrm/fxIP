@@ -20,6 +20,7 @@ typedef enum {
 
 uint8_t messagebuffer[256];
 uint16_t messagelength;
+uint16_t printflength;
 
 typedef struct irc_state
 {
@@ -31,11 +32,10 @@ typedef struct irc_state
   struct psock psock_out;
 
   uint8_t inputbuffer[128];
-
-
 } uip_tcp_appstate_t;
 
-typedef struct {
+typedef struct
+{
   char *message;  // :tungsten.libera.chat 250 asdfCasio :Highest connection count: 6972 (6971 clients) (71075 connections received)
   uint16_t length;
 

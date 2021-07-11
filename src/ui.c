@@ -12,6 +12,7 @@
 #include "uip/irc.h"
 
 extern struct uip_stats uip_stat;
+extern const char irc_username[]; 
 
 uint8_t cursor_blink = 0;
 
@@ -26,13 +27,12 @@ void ui_cursor_blink()
 
 void ui_page_irc_message_submit(page_t *page)
 {
-	unsigned length = snprintf(messagebuffer, sizeof(messagebuffer), "PRIVMSG ##manawyrmtest :%s", page->input_buffer);
+	printflength = snprintf(messagebuffer, sizeof(messagebuffer) - 1, "<%s> %s", irc_username, page->input_buffer);
+	printflength = MIN(sizeof(messagebuffer), printflength);
+	ui_write_log(PAGE_IRC_CHANNEL, 0, 0, messagebuffer, printflength);
 
-	if (length > sizeof(messagebuffer))
-	{
-		length = sizeof(messagebuffer);
-	}
-	messagelength = length;
+	messagelength = snprintf(messagebuffer, sizeof(messagebuffer), "PRIVMSG ##manawyrmtest :%s", page->input_buffer);
+	messagelength = MIN(sizeof(messagebuffer), messagelength);
 }
 
 const page_t pages[] = {

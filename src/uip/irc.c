@@ -3,6 +3,7 @@
 #include "psock.h"
 #include "uip.h"
 #include "ui.h"
+#include "util.h"
 
 #include <string.h>
 
@@ -14,6 +15,10 @@ static char *localhostname;
 static const char irc_command_privmsg[] = "PRIVMSG";
 static const char irc_command_error[] = "ERROR";
 static const char irc_command_ping[] = "PING";
+static const char irc_command_join[] = "JOIN";
+
+const char irc_username[] = "CasioFXIRC";
+int irc_username_length = 10;
 
 static int irc_parse_command(irc_message message)
 {
@@ -27,31 +32,42 @@ static int irc_parse_command(irc_message message)
 
 	if (strncasecmp(message.command, irc_command_privmsg, strlen(message.command)) == 0)
 	{
-		//ui_write_log(PAGE_IRC_CHANNEL, 0, 0, "privmsg", 7);
-
 		whitespace = memchr(message.command_arguments, ' ', strlen(message.command_arguments));
 		if (whitespace == NULL)
 			return;
 
-		ui_write_log(PAGE_IRC_CHANNEL, 0, 0, &whitespace[2], strlen(&whitespace[2]) - 1);
+		whitespace[2 + strlen(&whitespace[2]) - 1] = 0x00;
 
+		// find ! in prefix (which contains the username) and end the string there
+		char *prefixend = memchr(message.prefix, '!', strlen(message.prefix));
+		prefixend[0] = 0x00;
+
+		printflength = snprintf(messagebuffer, sizeof(messagebuffer) - 1, "<%s> %s", message.prefix , &whitespace[2]);
+		printflength = MIN(sizeof(messagebuffer), printflength);
+
+		ui_write_log(PAGE_IRC_CHANNEL, 0, 0, messagebuffer, printflength);
 		return;
 	}
 
-	/*if (strncasecmp(message.command, irc_command_ping, strlen(message.command)) == 0)
+	if (strncasecmp(message.command, irc_command_ping, strlen(message.command)) == 0)
 	{ 
-		//ui_write_log(PAGE_IRC_CHANNEL, 0, 0, "privmsg", 7);
-
-		whitespace = memchr(message.command_arguments, ' ', strlen(message.command_arguments));
-		if (whitespace == NULL)
-			return;
-
-		ui_write_log(PAGE_IRC_CHANNEL, 0, 0, &whitespace[2], strlen(&whitespace[2]) - 1);
-
+		messagelength = snprintf(messagebuffer, sizeof(messagebuffer) - 1, "PONG %s", message.command_arguments);
+		messagelength = MIN(sizeof(messagebuffer), messagelength);
 		return;
-	}*/
+	}
 
-	ui_write_log(PAGE_IRC_OVERVIEW, 0, 0, message.command_arguments, strlen(message.command_arguments));
+	if (strncasecmp(message.command, irc_command_join, strlen(message.command)) == 0)
+	{
+		ui_write_log(PAGE_IRC_OVERVIEW, 0, 0, "JOIN successful", 15);
+		return;
+	}
+
+	whitespace = memchr(message.command_arguments, ' ', strlen(message.command_arguments));
+	if (whitespace == NULL)
+		return;
+
+	whitespace[2 + strlen(&whitespace[2]) - 1] = 0x00;
+	ui_write_log(PAGE_IRC_OVERVIEW, 0, 0, &whitespace[2], strlen(&whitespace[2]) - 1);
 }
 
 static int irc_parse_line(char *data, uint16_t length)
