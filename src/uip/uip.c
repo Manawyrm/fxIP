@@ -393,7 +393,18 @@ uip_init(void)
     uip_udp_conns[c].lport = 0;
   }
 #endif /* UIP_UDP */
-  
+
+  // Initialize the ISS (initial sequence) variable with some random data.
+  int rand_sequence = rand();
+  memcpy(iss, &rand_sequence, 4);
+
+  // Initialize the local port to a random value
+  rand_sequence = rand();
+  while (lastport <= 1024)
+  {
+    rand_sequence = rand();
+    lastport = rand_sequence % 32000;
+  }
 
   /* IPv4 initialization. */
 #if UIP_FIXEDADDR == 0
@@ -402,6 +413,7 @@ uip_init(void)
 
 }
 /*---------------------------------------------------------------------------*/
+
 #if UIP_ACTIVE_OPEN
 struct uip_conn *
 uip_connect(uip_ipaddr_t *ripaddr, u16_t rport)

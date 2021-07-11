@@ -293,6 +293,8 @@ PT_THREAD(psock_readto(register struct psock *psock, unsigned char c))
     psock->state = STATE_NONE;
     PT_RESTART(&psock->psockpt);
   }
+
+  //fxip_log("ptend");
   PT_END(&psock->psockpt);
 }
 /*---------------------------------------------------------------------------*/

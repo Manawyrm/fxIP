@@ -53,6 +53,7 @@ ringbuffer_t tx_ring;
 
 void scif_write(const void *data, uint16_t len)
 {
+	while ((RING_BUF_SIZE - ringbuffer_available(&tx_ring)) < len);
 	ringbuffer_write(&tx_ring, data, len);
 	// enable transmit interrupt
 	SCSCR0 |= SCSCR_TIE;
@@ -65,6 +66,11 @@ int scif_read()
 		return ringbuffer_read_one(&rx_ring);
 	}
 	return -1;
+}
+
+int scif_read_flush()
+{
+	while (scif_read() != -1);
 }
 
 static void scif_interrupt()

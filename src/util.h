@@ -7,3 +7,5 @@
 
 #define MMIO8(addr) (*(volatile uint8_t*)(addr)) 
 #define MMIO16(addr) (*(volatile uint16_t*)(addr)) 
+
+#define MIN(a, b) (((a) < (b)) ? (a) : (b))
