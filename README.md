@@ -6,7 +6,8 @@
 
 ![Screenshot of ping](https://screenshot.tbspace.de/uwaontfeqlk.png)
 
-[YouTube-Video](https://www.youtube.com/watch?v=afkrucsMMrc)
+[YouTube video of fxIP's IRC client, connecting to irc.libera.chat](https://www.youtube.com/watch?v=afkrucsMMrc)  
+[YouTube video of fxTerm, a simple RS232 terminal application](https://www.youtube.com/watch?v=epFX8K0dhdY)
 
 fxIP is a port of [uIP 1.0](https://github.com/adamdunkels/uip) to Casio fx-9750/fx-9860 calculators.  
 It (currently) requires calculators with a SuperH SH4a CPU, needs quite a bit of SRAM.  
