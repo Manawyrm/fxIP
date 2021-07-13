@@ -1,0 +1,90 @@
+diff -Naur gint-orig/fx9860g.ld gint-mod/fx9860g.ld
+--- gint-orig/fx9860g.ld	2021-05-12 09:16:14.000000000 +0200
++++ gint-mod/fx9860g.ld	2021-07-13 21:46:59.045357371 +0200
+@@ -25,7 +25,7 @@
+ 	   0x1100 bytes near the end of the user RAM, which is larger; the 6k
+ 	   left for the user are honored in both cases. Unused memory from the
+ 	   exposed 6k and non-exposed memory is available through malloc(). */
+-	ram   (rw):   o = 0x08100200, l = 6k
++	ram   (rw):   o = 0x08100200, l = 30k
+
+ 	/* This region represents the first block of user RAM. Linker arranges
+ 	   sections as if linked to address 0, then gint's runtime determines
+diff -Naur gint-orig/include/gint/intc.h gint-mod/include/gint/intc.h
+--- gint-orig/include/gint/intc.h	2021-05-12 09:16:14.000000000 +0200
++++ gint-mod/include/gint/intc.h	2021-07-13 21:46:59.052024044 +0200
+@@ -36,6 +36,8 @@
+ 	INTC_DMA_DEI4,
+ 	INTC_DMA_DEI5,
+ 	INTC_DMA_DADERR,
++   /* Serial Communication Interface with FIFO (SCIF0) */
++   INTC_SCIF0,
+ 	/* Real-Time Clock [RTC]; a single IPR covers all 3 interrupts */
+ 	INTC_RTC_ATI,
+ 	INTC_RTC_PRI,
+diff -Naur gint-orig/src/intc/intc.c gint-mod/src/intc/intc.c
+--- gint-orig/src/intc/intc.c	2021-05-12 09:16:14.000000000 +0200
++++ gint-mod/src/intc/intc.c	2021-07-13 21:46:59.058690718 +0200
+@@ -57,6 +57,8 @@
+ 	{ IPRF, 0x0f00, IMR5,  0x10, _ },
+ 	{ IPRF, 0x0f00, IMR5,  0x20, _ },
+ 	{ IPRF, 0x0f00, IMR5,  0x40, _ },
++	/* SCIF */
++	{ IPRG, 0xf000, IMR5,  0x01, _ },
+ 	/* RTC */
+ 	{ IPRK, 0xf000, IMR10, 0x04, IPRA, 0x000f },
+ 	{ IPRK, 0xf000, IMR10, 0x02, IPRA, 0x000f },
+diff -Naur gint-orig/src/kernel/syscalls.S gint-mod/src/kernel/syscalls.S
+--- gint-orig/src/kernel/syscalls.S	2021-05-12 09:16:14.000000000 +0200
++++ gint-mod/src/kernel/syscalls.S	2021-07-13 21:46:59.058690718 +0200
+@@ -40,6 +40,18 @@
+ .global ___GetVRAMAddress
+ .global ___ConfigureStatusArea
+
++.global ___Serial_Open
++.global ___Serial_Close
++.global ___Serial_ReadByte
++.global ___Serial_ReadBytes
++.global ___Serial_WriteByte
++.global ___Serial_WriteBytes
++.global ___Serial_GetRxBufferSize
++.global ___Serial_GetTxBufferFreeCapacity
++.global ___Serial_ClearReceiveBuffer
++.global ___Serial_ClearTransmitBuffer
++.global ___OS_InnerWait_ms
++
+ #define syscall_(id, syscall_table)	\
+ 	mov.l	syscall_table, r2	;\
+ 	mov.l	1f, r0			;\
+@@ -103,6 +115,32 @@
+ ___GetVRAMAddress:
+ 	syscall(0x135)
+
++
++___Serial_Open:
++	syscall(0x418)
++___Serial_Close:
++	syscall(0x419)
++___Serial_ReadByte:
++	syscall(0x040C)
++___Serial_ReadBytes:
++	syscall(0x040D)
++___Serial_WriteByte:
++	syscall(0x040E)
++___Serial_WriteBytes:
++	syscall(0x040F)
++___Serial_GetRxBufferSize:
++	syscall(0x0411)
++___Serial_GetTxBufferFreeCapacity:
++	syscall(0x0412)
++___Serial_ClearReceiveBuffer:
++	syscall(0x0413)
++___Serial_ClearTransmitBuffer:
++	syscall(0x0414)
++
++___OS_InnerWait_ms:
++	syscall(0x0420)
++
++
+ syscall_table:
+ 	.long	0x80010070
