@@ -26,7 +26,8 @@ echo "1" > /proc/sys/net/ipv4/ip_forward
 ```
 
 ### Building Add-In
-Requires [fxsdk](https://gitea.planet-casio.com/Lephenixnoir/fxsdk) to build.  
+Requires [fxsdk](https://gitea.planet-casio.com/Lephenixnoir/fxsdk) and gint to build.   
+gint needs to be patched using gint.patch before building.  
 ```
 touch src/main.c && make clean && fxsdk build-fx && cp -f Fxip.g1a ~/Exchange/Test/
 ```
