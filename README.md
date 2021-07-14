@@ -15,6 +15,9 @@ It (currently) requires calculators with a SuperH SH4a CPU, needs quite a bit of
 fxIP connects to IP networks via SLIP encapsulation over the 3-pin 2.5mm 5V serial port/UART.  
 By default, it connects to irc.libera.chat (without SSL).
 
+[TobleMiner](https://github.com/TobleMiner) wrote the SCIF UART driver, the ringbuffer implementation, the object-log storage,   
+which is used to store IRC and log messages for display and fixed issues with endianess on SuperH and the SLIP encapsulation.
+
 ### Network setup (needs root)
 ```
 slattach -s 115200 -p slip -v -d -L /dev/ttyUSB0
